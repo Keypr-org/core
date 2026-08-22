@@ -5,12 +5,6 @@ project(keypr-core LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-include(CTest)
-enable_testing()
-
-list(APPEND CMAKE_PREFIX_PATH "${CMAKE_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share")
-list(APPEND CMAKE_PREFIX_PATH "${CMAKE_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib/cmake")
-
 find_package(unofficial-sodium CONFIG REQUIRED)
 find_package(GTest CONFIG REQUIRED)
 
@@ -28,13 +22,16 @@ target_include_directories(keypr-core
 )
 
 target_link_libraries(keypr-core
-    PRIVATE
+    PUBLIC
         unofficial-sodium::sodium
 )
 
 # ----------------------------------------------
 #           Gtest Tests Compilation
 # ----------------------------------------------
+
+include(CTest)
+enable_testing()
 
 add_executable(core_tests
     tests/test_CryptoService.cpp
