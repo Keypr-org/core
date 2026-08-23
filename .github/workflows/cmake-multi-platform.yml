@@ -49,15 +49,7 @@ jobs:
         with:
           vcpkgDirectory: "${{ github.workspace }}/vcpkg"
 
-      - name: Configurer CMake
+      - name: Configure, build and run using cmake workflow
         run: >
           cmake
-          -S .
-          -B build
-          -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
-
-      - name: Compile core
-        run: cmake --build build
-
-      - name: Run tests
-        run: ctest --test-dir build --output-on-failure
+          --workflow default
