@@ -23,6 +23,11 @@ target_link_libraries(keypr-core
         unofficial-sodium::sodium
 )
 
+target_compile_definitions(keypr-core
+    PRIVATE
+        SODIUM_STATIC=1
+)
+
 if(BUILD_TESTING)
   add_subdirectory(tests)
 endif()
