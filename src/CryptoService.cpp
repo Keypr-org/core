@@ -4,6 +4,7 @@
 #include <sstream>
 #include <iomanip>
 
+
 // Convertir bytes en hex string
 static std::string bytesToHex(const unsigned char* bytes, size_t length) {
     std::stringstream ss;
