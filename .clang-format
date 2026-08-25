@@ -1,0 +1,37 @@
+---
+BasedOnStyle: LLVM
+
+Language: Cpp
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+
+ColumnLimit: 100
+AccessModifierOffset: -2
+NamespaceIndentation: None
+
+BreakBeforeBraces: Attach
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: Never
+
+PointerAlignment: Left
+ReferenceAlignment: Left
+DerivePointerAlignment: false
+
+SpaceBeforeParens: ControlStatements
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+
+BreakBeforeBinaryOperators: None
+AlignConsecutiveAssignments: false
+AlignConsecutiveDeclarations: false
+AlignTrailingComments: false
+
+SortIncludes: CaseSensitive
+IncludeBlocks: Preserve
+
+IndentCaseLabels: false
+FixNamespaceComments: true
+
+ReflowComments: true
+...
