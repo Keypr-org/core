@@ -1,17 +1,9 @@
 #include "FileHandler.h"
 #include <chrono>
 #include <filesystem>
+#include <fstream>
+#include <vector>
 
-/**
- * @brief Saves a file atomically by writing to a temporary swap file first and then renaming it to
- * the target filename.
- *
- * @param filename The target filename to save the content to.
- * @param content The content to be saved, represented as a span of bytes.
- * @throws FileNotFoundError If the directory of the target filename does not exist.
- * @throws FileWriteError If there is an error writing to the swap file or renaming it to the target
- * filename.
- */
 void FileHandler::saveFileAtomically(const std::string& filename, Bytes content) {
     // ---- Create a swap file with a timestamp so its_unique to write to first ----
     const auto timestamp = std::chrono::steady_clock::now().time_since_epoch().count();
@@ -23,13 +15,28 @@ void FileHandler::saveFileAtomically(const std::string& filename, Bytes content)
 
     // --- Write the content to the swap file ---
     std::ofstream swapFile(swapFilename, std::ios::binary);
-    if (!swapFile.is_open()) {
+    if (!swapFile.is_open() || swapFile.fail()) {
         throw FileWriteError("Failed to open swap file for writing: " + swapFilename);
     }
     swapFile.write(reinterpret_cast<const char*>(content.data()), content.size());
+
+    if (swapFile.fail()) {
+        std::filesystem::remove(swapFilename);
+        throw FileWriteError("Failed to write to swap file: " + swapFilename);
+    }
     // Ensure all data has been written to disk
     swapFile.flush();
+
+    if (swapFile.fail()) {
+        std::filesystem::remove(swapFilename);
+        throw FileWriteError("Failed to flush swap file: " + swapFilename);
+    }
+
     swapFile.close();
+    if (swapFile.fail()) {
+        std::filesystem::remove(swapFilename);
+        throw FileWriteError("Failed to close swap file: " + swapFilename);
+    }
 
     // ---- Atomically replace the target file with the swap file ----
     std::error_code error;
@@ -40,29 +47,37 @@ void FileHandler::saveFileAtomically(const std::string& filename, Bytes content)
     }
 }
 
-/*
- * @brief Opens a file for reading or writing.
- *
- * @param filename The name of the file to open.
- * @param mode The mode in which to open the file (default is read-only binary).
- *
- * @return An ifstream object representing the opened file.
- */
-std::ifstream FileHandler::openFile(const std::string& filename, std::ios_base::openmode mode) {
-    std::ifstream file(filename, mode);
+std::vector<unsigned char> FileHandler::readFile(const std::string& filename) {
+    auto file = std::ifstream(filename, std::ios::ate | std::ios::binary);
+
     if (!file.is_open()) {
         throw FileNotFoundError("Failed to open file: " + filename);
     }
-    return file;
+
+    auto end = file.tellg();
+
+    // tellg() returns negative value on failure
+    if (end < 0) {
+        throw FileHandlerError("Failed to determine file size: " + filename);
+    }
+
+    std::size_t size = static_cast<std::size_t>(end);
+
+    std::vector<unsigned char> content(size);
+
+    // Move pointer back to the beginning of the file
+    file.seekg(0);
+
+    // Read file contents using a pointer on the data of the vector
+    if (!file.read(reinterpret_cast<char*>(content.data()), size)) {
+        throw FileReadError("Failed to read file contents: " + filename);
+    }
+
+    file.close();
+
+    return content;
 }
 
-/*
- * @brief Checks if a file exists and is a file.
- *
- * @param filename The name of the file to check.
- *
- * @return true if the file exists and is a file, false otherwise.
- */
 bool FileHandler::fileExists(const std::string& filename) {
     return std::filesystem::exists(filename) && std::filesystem::is_regular_file(filename);
 }

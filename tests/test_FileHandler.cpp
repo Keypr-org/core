@@ -9,9 +9,8 @@
 
 #include <chrono>
 #include <filesystem>
-#include <fstream>
-#include <iterator>
 #include <string>
+#include <vector>
 
 #include "FileHandler.h"
 #include "Types.h"
@@ -58,43 +57,41 @@ class FileHandlerTest : public ::testing::Test {
     fs::path path(const std::string& filename) const { return testDirectory / filename; }
 
     /*
-     * Reads all remaining bytes from an opened file.
+     * Creates a read-only byte span over a vector's underlying data.
      *
-     * A std::string is suitable here because it can contain null bytes and
-     * other non-printable characters.
+     * This does not copy the data. The vector must remain alive and must not
+     * be modified in a way that causes reallocation while the span is used.
      */
-    static std::string readFile(std::ifstream& file) {
-        return {std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};
+    static Bytes asBytes(const std::vector<unsigned char>& data) {
+        return Bytes{data.data(), data.size()};
     }
 
     /*
      * Creates a read-only byte span over a string's underlying data.
      *
-     * This does not copy the data. The string must remain alive and must not
-     * be modified in a way that causes reallocation while the span is used.
+     * This does not copy the data. The string must remain alive while the
+     * span is used.
      */
     static Bytes asBytes(const std::string& data) {
-        return Bytes{reinterpret_cast<const std::byte*>(data.data()), data.size()};
+        return Bytes{reinterpret_cast<const unsigned char*>(data.data()), data.size()};
     }
 };
 
 /*
- * Verifies that saveFileAtomically() creates a file and that openFile()
- * can open it again.
+ * Verifies that saveFileAtomically() creates a file and that readFile()
+ * can read the saved content.
  */
-TEST_F(FileHandlerTest, SavesAndOpensFile) {
+TEST_F(FileHandlerTest, SavesAndReadsFile) {
     const auto filename = path("example.txt").string();
     const std::string content = "Hello, GoogleTest!";
-    std::ifstream file;
 
-    FileHandler::saveFileAtomically(filename, asBytes(content));
+    ASSERT_NO_THROW(FileHandler::saveFileAtomically(filename, asBytes(content)));
 
     EXPECT_TRUE(FileHandler::fileExists(filename));
 
-    EXPECT_NO_THROW(file = FileHandler::openFile(filename));
+    const std::vector<unsigned char> expected(content.begin(), content.end());
 
-    ASSERT_TRUE(file.is_open());
-    EXPECT_EQ(readFile(file), content);
+    EXPECT_EQ(FileHandler::readFile(filename), expected);
 }
 
 /*
@@ -102,17 +99,12 @@ TEST_F(FileHandlerTest, SavesAndOpensFile) {
  */
 TEST_F(FileHandlerTest, SavesEmptyFile) {
     const auto filename = path("empty.txt").string();
-    const std::string content;
-    std::ifstream file;
+    const std::vector<unsigned char> content;
 
-    FileHandler::saveFileAtomically(filename, asBytes(content));
+    ASSERT_NO_THROW(FileHandler::saveFileAtomically(filename, asBytes(content)));
 
     ASSERT_TRUE(FileHandler::fileExists(filename));
-
-    EXPECT_NO_THROW(file = FileHandler::openFile(filename));
-
-    ASSERT_TRUE(file.is_open());
-    EXPECT_TRUE(readFile(file).empty());
+    EXPECT_TRUE(FileHandler::readFile(filename).empty());
 }
 
 /*
@@ -120,18 +112,16 @@ TEST_F(FileHandlerTest, SavesEmptyFile) {
  */
 TEST_F(FileHandlerTest, ReplacesExistingFile) {
     const auto filename = path("replace.txt").string();
-    std::ifstream file;
 
     const std::string initialContent = "Original content";
-    EXPECT_NO_THROW(FileHandler::saveFileAtomically(filename, asBytes(initialContent)));
+    ASSERT_NO_THROW(FileHandler::saveFileAtomically(filename, asBytes(initialContent)));
 
     const std::string newContent = "Updated content";
-    EXPECT_NO_THROW(FileHandler::saveFileAtomically(filename, asBytes(newContent)));
+    ASSERT_NO_THROW(FileHandler::saveFileAtomically(filename, asBytes(newContent)));
 
-    EXPECT_NO_THROW(file = FileHandler::openFile(filename));
+    const std::vector<unsigned char> expected(newContent.begin(), newContent.end());
 
-    ASSERT_TRUE(file.is_open());
-    EXPECT_EQ(readFile(file), newContent);
+    EXPECT_EQ(FileHandler::readFile(filename), expected);
 }
 
 /*
@@ -141,7 +131,7 @@ TEST_F(FileHandlerTest, ReportsExistingFile) {
     const auto filename = path("exists.txt").string();
     const std::string content = "Some content";
 
-    FileHandler::saveFileAtomically(filename, asBytes(content));
+    ASSERT_NO_THROW(FileHandler::saveFileAtomically(filename, asBytes(content)));
 
     EXPECT_TRUE(FileHandler::fileExists(filename));
 }
@@ -156,12 +146,24 @@ TEST_F(FileHandlerTest, ReportsMissingFileAsNonexistent) {
 }
 
 /*
- * Verifies that opening a missing file fails.
+ * Verifies that reading a missing file throws FileNotFoundError.
  */
-TEST_F(FileHandlerTest, OpeningMissingFileFails) {
+TEST_F(FileHandlerTest, ReadingMissingFileFails) {
     const auto filename = path("missing.txt").string();
 
-    EXPECT_THROW(FileHandler::openFile(filename), FileNotFoundError);
+    EXPECT_THROW(FileHandler::readFile(filename), FileNotFoundError);
+}
+
+/*
+ * Verifies that saving to a path whose parent directory does not exist
+ * throws FileWriteError.
+ */
+TEST_F(FileHandlerTest, SavingToInvalidPathFails) {
+    const auto filename = (testDirectory / "missing_directory" / "file.txt").string();
+
+    const std::string content = "This write should fail.";
+
+    EXPECT_THROW(FileHandler::saveFileAtomically(filename, asBytes(content)), FileNotFoundError);
 }
 
 /*
@@ -174,20 +176,12 @@ TEST_F(FileHandlerTest, OpeningMissingFileFails) {
  */
 TEST_F(FileHandlerTest, PreservesBinaryContent) {
     const auto filename = path("binary.dat").string();
-    std::ifstream file;
 
-    /*
-     * The explicit char conversion is used because 0xFF may not fit in a
-     * signed char on all platforms.
-     */
-    const std::string content{'\x01', '\x02', '\x00', '\x03', static_cast<char>(0xFF)};
+    const std::vector<unsigned char> content = {0x01, 0x02, 0x00, 0x03, 0xFF};
 
-    EXPECT_NO_THROW(FileHandler::saveFileAtomically(filename, asBytes(content)));
+    ASSERT_NO_THROW(FileHandler::saveFileAtomically(filename, asBytes(content)));
 
-    EXPECT_NO_THROW(file = FileHandler::openFile(filename, std::ios::in | std::ios::binary));
-
-    ASSERT_TRUE(file.is_open());
-    EXPECT_EQ(readFile(file), content);
+    EXPECT_EQ(FileHandler::readFile(filename), content);
 }
 
 /*
@@ -195,16 +189,14 @@ TEST_F(FileHandlerTest, PreservesBinaryContent) {
  */
 TEST_F(FileHandlerTest, PreservesMultilineContent) {
     const auto filename = path("multiline.txt").string();
-    std::ifstream file;
 
     const std::string content = "First line\n"
                                 "Second line\n"
                                 "Third line\n";
 
-    EXPECT_NO_THROW(FileHandler::saveFileAtomically(filename, asBytes(content)));
+    ASSERT_NO_THROW(FileHandler::saveFileAtomically(filename, asBytes(content)));
 
-    EXPECT_NO_THROW(file = FileHandler::openFile(filename));
+    const std::vector<unsigned char> expected(content.begin(), content.end());
 
-    ASSERT_TRUE(file.is_open());
-    EXPECT_EQ(readFile(file), content);
+    EXPECT_EQ(FileHandler::readFile(filename), expected);
 }
