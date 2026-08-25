@@ -4,47 +4,68 @@
 #include <fstream>
 #include <vector>
 
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <stdio.h>
+#endif
+
 void FileHandler::saveFileAtomically(const std::string& filename, Bytes content) {
     // ---- Create a swap file with a timestamp so its_unique to write to first ----
     const auto timestamp = std::chrono::steady_clock::now().time_since_epoch().count();
-    const std::string directory = std::filesystem::path(filename).parent_path().string();
+    const auto target = std::filesystem::path(filename);
+    const auto directory =
+        target.parent_path().empty() ? std::filesystem::current_path() : target.parent_path();
     if (!std::filesystem::is_directory(directory)) {
-        throw FileNotFoundError("Directory does not exist: " + directory);
+        throw FileNotFoundError("Directory does not exist: " + directory.string());
     }
-    const std::string swapFilename = directory + "/.swap_" + std::to_string(timestamp) + ".tmp";
+    const auto swapPath = directory / (".swap_" + std::to_string(timestamp) + ".tmp");
 
     // --- Write the content to the swap file ---
-    std::ofstream swapFile(swapFilename, std::ios::binary);
+    std::ofstream swapFile(swapPath, std::ios::binary);
     if (!swapFile.is_open() || swapFile.fail()) {
-        throw FileWriteError("Failed to open swap file for writing: " + swapFilename);
+        throw FileWriteError("Failed to open swap file for writing: " + swapPath.string());
     }
     swapFile.write(reinterpret_cast<const char*>(content.data()), content.size());
 
     if (swapFile.fail()) {
-        std::filesystem::remove(swapFilename);
-        throw FileWriteError("Failed to write to swap file: " + swapFilename);
+        // The error is not used but avoids remove from throwing an error
+        std::error_code ec;
+        std::filesystem::remove(swapPath, ec);
+        throw FileWriteError("Failed to write to swap file: " + swapPath.string());
     }
-    // Ensure all data has been written to disk
     swapFile.flush();
 
     if (swapFile.fail()) {
-        std::filesystem::remove(swapFilename);
-        throw FileWriteError("Failed to flush swap file: " + swapFilename);
+        std::error_code ec;
+        std::filesystem::remove(swapPath, ec);
+        throw FileWriteError("Failed to flush swap file: " + swapPath.string());
     }
 
     swapFile.close();
     if (swapFile.fail()) {
-        std::filesystem::remove(swapFilename);
-        throw FileWriteError("Failed to close swap file: " + swapFilename);
+        std::error_code ec;
+        std::filesystem::remove(swapPath, ec);
+        throw FileWriteError("Failed to close swap file: " + swapPath.string());
     }
 
     // ---- Atomically replace the target file with the swap file ----
-    std::error_code error;
-    std::filesystem::rename(swapFilename, filename, error);
-    if (error) {
-        std::filesystem::remove(swapFilename);
-        throw FileWriteError("Failed to rename swap file to target file: " + error.message());
+    // Atomicity is not guaranteed by the STL filesystem library and replacing a file that already
+    // exists might fail on windows. Thus the replace operation must be platform specific
+#ifdef _WIN32
+
+    if (!MoveFileExW(swapPath.c_str(), target.c_str(),
+                     MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
+        // Remove file on failure
+        std::filesystem::remove(swapPath);
+        throw FileWriteError("[Windows API]: Failed to move swap file to target file");
     }
+#else
+    if (rename(swapPath.c_str(), target.c_str()) != 0) {
+        std::filesystem::remove(swapPath);
+        throw FileWriteError("[POSIX API]: Failed to move swap file to target file");
+    }
+#endif
 }
 
 std::vector<unsigned char> FileHandler::readFile(const std::string& filename) {
