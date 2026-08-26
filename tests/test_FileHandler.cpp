@@ -1,8 +1,11 @@
 /*
- * This test file uses GoogleTest to verify that FileHandler.cpp works correctly.
+ * @brief This test file uses GoogleTest to verify that FileHandler.cpp works correctly.
  *
  * It was written using AI assistance as it was the starting point of our testsing journey.
  * It is rich in comments so it can be used as a reference for future tests
+ *
+ * @author Nolan Evard (with AI Assistance)
+ * @date 25.08.2026
  */
 
 #include <gtest/gtest.h>
@@ -118,6 +121,16 @@ TEST_F(FileHandlerTest, ReplacesExistingFile) {
 
     const std::string newContent = "Updated content";
     ASSERT_NO_THROW(FileHandler::saveFileAtomically(filename, asBytes(newContent)));
+
+    // Check that no swap file is remaining after the replacement
+    const auto swapFiles = fs::directory_iterator(testDirectory);
+    for (const auto& entry : swapFiles) {
+        const auto& path = entry.path();
+        if (path.extension() == ".tmp" &&
+            path.stem().string().find("replace") != std::string::npos) {
+            FAIL() << "Swap file was not removed: " << path.string();
+        }
+    }
 
     const std::vector<unsigned char> expected(newContent.begin(), newContent.end());
 

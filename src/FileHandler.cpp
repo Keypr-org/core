@@ -1,3 +1,11 @@
+/*
+ * @brief This file contains the implementation of the FileHandler class, which provides methods for
+ * reading and writing files atomically.
+ *
+ * @author Nolan Evard
+ * @date 26.08.2026
+ *
+ */
 #include "FileHandler.h"
 #include <chrono>
 #include <filesystem>
@@ -19,7 +27,7 @@ void FileHandler::saveFileAtomically(const std::string& filename, Bytes content)
     if (!std::filesystem::is_directory(directory)) {
         throw FileNotFoundError("Directory does not exist: " + directory.string());
     }
-    const auto swapPath = directory / (".swap_" + std::to_string(timestamp) + ".tmp");
+    const auto swapPath = directory / (target.stem().string() + std::to_string(timestamp) + ".tmp");
 
     // --- Write the content to the swap file ---
     std::ofstream swapFile(swapPath, std::ios::binary);

@@ -1,3 +1,10 @@
+/*
+ * @brief A utility class for handling file operations such as reading, writing, and checking file
+ * existence.
+ *
+ * @author Nolan Evard
+ * @date 25.08.2026
+ */
 #pragma once
 
 #include "Types.h"
