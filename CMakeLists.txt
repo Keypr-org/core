@@ -11,6 +11,7 @@ find_package(unofficial-sodium CONFIG REQUIRED)
 
 add_library(keypr-core
     src/CryptoService.cpp
+    src/FileHandler.cpp
 )
 
 target_include_directories(keypr-core

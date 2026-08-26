@@ -2,6 +2,7 @@ find_package(GTest CONFIG REQUIRED)
 
 add_executable(core_tests
     test_CryptoService.cpp
+    test_FileHandler.cpp
 )
 
 target_link_libraries(core_tests
