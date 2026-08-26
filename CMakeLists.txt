@@ -12,6 +12,8 @@ find_package(unofficial-sodium CONFIG REQUIRED)
 add_library(keypr-core
     src/FileHandler.cpp
     src/CryptoService.cpp
+    src/VaultHeader.cpp
+    src/RawVault.cpp
 )
 
 target_include_directories(keypr-core
