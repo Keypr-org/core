@@ -33,17 +33,20 @@
   "buildPresets": [
     {
       "name": "debug",
-      "configurePreset": "debug"
+      "configurePreset": "debug",
+      "configuration": "Debug"
     },
     {
       "name": "release",
-      "configurePreset": "release"
+      "configurePreset": "release",
+      "configuration": "Release"
     }
   ],
   "testPresets": [
     {
       "name": "default",
       "configurePreset": "debug",
+      "configuration": "Debug",
       "output": { "outputOnFailure": true }
     }
   ],
