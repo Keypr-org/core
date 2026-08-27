@@ -1,3 +1,4 @@
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "VaultHeader.h"
@@ -31,6 +32,22 @@ class VaultHeaderTest : public ::testing::Test {
 };
 
 // ------------- TESTS --------------------
+/*
+ * Data that represents a valid vault does not throw and is correctly parsed
+ */
+TEST_F(VaultHeaderTest, ValidDataParsesCorrectly) {
+    EXPECT_NO_THROW({
+        VaultHeader header = VaultHeader::parse(testData);
+        EXPECT_EQ(header.formatVersion(), VAULT_FORMAT_CURRENT_VERSION);
+        EXPECT_THAT(
+            header.argon2Salt(),
+            ::testing::ElementsAreArray(testData.begin() + ARGON2_SALT_OFFSET,
+                                        testData.begin() + ARGON2_SALT_OFFSET + ARGON2_SALT_SIZE));
+        EXPECT_EQ(header.argon2OpLimit(), crypto_pwhash_OPSLIMIT_INTERACTIVE);
+        EXPECT_EQ(header.argon2MemLimit(), crypto_pwhash_MEMLIMIT_INTERACTIVE);
+    });
+}
+
 /*
  * Data that does not contain header magic numbers throws a VaultHeaderParsingError
  */

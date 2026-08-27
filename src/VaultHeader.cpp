@@ -1,6 +1,17 @@
 #include "VaultHeader.h"
 #include <sodium.h>
 
+/*
+ * @brief Parses a byte span into a VaultHeader object.
+ *
+ * @param data A span of bytes representing the vault header. Must be at least VAULT_HEADER_BYTES
+ * long.
+ *
+ * @return A VaultHeader object constructed from the provided byte span.
+ *
+ * @throws VaultHeaderParsingError if the provided data is too small, has invalid magic bytes,
+ *         or contains unsupported format version or invalid Argon2 parameters.
+ */
 VaultHeader VaultHeader::parse(Bytes data) {
     if (data.size() < VAULT_HEADER_BYTES) {
         throw VaultHeaderParsingError("Data too small to contain a header");
