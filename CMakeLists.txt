@@ -14,6 +14,15 @@ add_library(keypr-core
     src/CryptoService.cpp
     src/VaultHeader.cpp
     src/RawVault.cpp
+    src/VaultSession.cpp
+    src/entities/Category.cpp
+    src/entities/CreditCard.cpp
+    src/entities/DatedItem.cpp
+    src/entities/Entry.cpp
+    src/entities/Item.cpp
+    src/entities/Persona.cpp
+    src/entities/Website.cpp
+    src/entities/Wifi.cpp
 )
 
 target_include_directories(keypr-core
