@@ -10,8 +10,8 @@ include(CTest)
 find_package(unofficial-sodium CONFIG REQUIRED)
 
 add_library(keypr-core
-    src/CryptoService.cpp
     src/FileHandler.cpp
+    src/CryptoService.cpp
     src/VaultHeader.cpp
     src/RawVault.cpp
 )
