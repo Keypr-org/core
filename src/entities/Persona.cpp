@@ -1,7 +1,7 @@
 #include "entities/Persona.h"
 
-Persona::Persona(int64_t id, std::string firstName, std::string lastName, DateTime dateOfBirth, std::string address, std::string phone)
-    : DatedItem(id), firstName(std::move(firstName)), lastName(std::move(lastName)), dateOfBirth(dateOfBirth), address(std::move(address)), phone(std::move(phone)) {
+Persona::Persona(std::string firstName, std::string lastName, DateTime dateOfBirth, std::string address, std::string phone)
+    : DatedItem(), firstName(std::move(firstName)), lastName(std::move(lastName)), dateOfBirth(dateOfBirth), address(std::move(address)), phone(std::move(phone)) {
 }
 
 const std::string &Persona::getFirstName() const noexcept {

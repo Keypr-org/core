@@ -5,7 +5,7 @@
 
 class CreditCard : public Entry {
 public:
-    explicit CreditCard(int64_t id, std::string cardHolderName, std::string cardNumber, std::string expiration, std::string securityCode, std::string notes = {});
+    explicit CreditCard(std::string cardHolderName, std::string cardNumber, std::string expiration, std::string securityCode, std::string notes = {});
 
     const std::string &getCardHolderName() const noexcept;
     void setCardHolderName(std::string cardHolderName);

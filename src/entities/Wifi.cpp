@@ -1,7 +1,7 @@
 #include "entities/Wifi.h"
 
-Wifi::Wifi(int64_t id, std::string networkName, std::string password, std::string notes)
-    : Entry(id, std::move(notes)), networkName(std::move(networkName)), password(std::move(password)) {
+Wifi::Wifi(std::string networkName, std::string password, std::string notes)
+    : Entry(std::move(notes)), networkName(std::move(networkName)), password(std::move(password)) {
 }
 
 const std::string &Wifi::getNetworkName() const noexcept {

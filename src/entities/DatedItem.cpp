@@ -1,11 +1,11 @@
 #include "entities/DatedItem.h"
 
-DatedItem::DatedItem(int64_t id, DateTime creationDate, DateTime lastModifiedDate)
-    : Item(id), creationAt(creationDate), updatedAt(lastModifiedDate) {
+DatedItem::DatedItem(DateTime creationDate, DateTime lastModifiedDate)
+    : Item(), creationAt(creationDate), updatedAt(lastModifiedDate) {
 }
 
-DatedItem::DatedItem(int64_t id, DateTime creationDate)
-    : Item(id), creationAt(creationDate), updatedAt(creationDate) {
+DatedItem::DatedItem(DateTime creationDate)
+    : Item(), creationAt(creationDate), updatedAt(creationDate) {
 }
 
 DateTime DatedItem::getCreationDate() const noexcept {
