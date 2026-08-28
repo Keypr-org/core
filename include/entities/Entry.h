@@ -5,7 +5,7 @@
 
 class Entry : public DatedItem {
 public:
-    explicit Entry(int64_t id, std::string notes = {});
+    explicit Entry(std::string notes = {});
     virtual ~Entry() = default;
 
     const std::string &getNotes() const noexcept;

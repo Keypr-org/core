@@ -1,7 +1,7 @@
 #include "entities/CreditCard.h"
 
-CreditCard::CreditCard(int64_t id, std::string cardHolderName, std::string cardNumber, std::string expiration, std::string securityCode, std::string notes)
-    : Entry(id, std::move(notes)), cardHolderName(std::move(cardHolderName)), cardNumber(std::move(cardNumber)), expiration(std::move(expiration)), securityCode(std::move(securityCode)) {
+CreditCard::CreditCard(std::string cardHolderName, std::string cardNumber, std::string expiration, std::string securityCode, std::string notes)
+    : Entry(std::move(notes)), cardHolderName(std::move(cardHolderName)), cardNumber(std::move(cardNumber)), expiration(std::move(expiration)), securityCode(std::move(securityCode)) {
 }
 
 const std::string &CreditCard::getCardHolderName() const noexcept {

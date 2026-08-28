@@ -9,6 +9,8 @@
 class VaultSession : public DatedItem {
 public:
 
+    VaultSession(std::string name, EncKey encKey, AuthKey authKey);
+
     const std::string &getName() const noexcept;
 
     const std::vector<Category> &getCategories() const noexcept;
@@ -20,11 +22,10 @@ public:
 
 
 private:
-    VaultSession(int64_t id, std::string name, EncKey encKey, AuthKey authKey, std::vector<Category> categories = {}, std::vector<Persona> personas = {});
-    VaultSession(int64_t id, DateTime creationDate, DateTime lastModifiedDate, std::string name, EncKey encKey, AuthKey authKey, std::vector<Category> categories, std::vector<Persona> personas);
+    VaultSession(DateTime creationDate, DateTime lastModifiedDate, std::string name, EncKey encKey, AuthKey authKey, std::vector<Category> categories, std::vector<Persona> personas);
 
-    EncKey encKey;
-    AuthKey authKey;
+    const EncKey encKey;
+    const AuthKey authKey;
     std::string name;
     std::vector<Category> categories;
     std::vector<Persona> personas;

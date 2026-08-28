@@ -4,7 +4,7 @@
 
 class Wifi : public Entry {
 public:
-    explicit Wifi(int64_t id, std::string networkName, std::string password, std::string notes = {});
+    explicit Wifi(std::string networkName, std::string password, std::string notes = {});
 
     const std::string &getNetworkName() const noexcept;
     void setNetworkName(std::string networkName);
