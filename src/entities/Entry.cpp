@@ -10,4 +10,5 @@ const std::string &Entry::getNotes() const noexcept {
 
 void Entry::setNotes(std::string notes) {
     this->notes = std::move(notes);
+    setLastModifiedDate(std::chrono::system_clock::now());
 }

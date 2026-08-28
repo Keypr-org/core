@@ -10,6 +10,7 @@ const std::string &Persona::getFirstName() const noexcept {
 
 void Persona::setFirstName(std::string firstName) {
     this->firstName = std::move(firstName);
+    setLastModifiedDate(std::chrono::system_clock::now());
 }
 
 const std::string &Persona::getLastName() const noexcept {
@@ -18,6 +19,7 @@ const std::string &Persona::getLastName() const noexcept {
 
 void Persona::setLastName(std::string lastName) {
     this->lastName = std::move(lastName);
+    setLastModifiedDate(std::chrono::system_clock::now());
 }
 
 DateTime Persona::getDateOfBirth() const noexcept {
@@ -26,6 +28,7 @@ DateTime Persona::getDateOfBirth() const noexcept {
 
 void Persona::setDateOfBirth(DateTime dateOfBirth) noexcept {
     this->dateOfBirth = dateOfBirth;
+    setLastModifiedDate(std::chrono::system_clock::now());
 }
 
 const std::string &Persona::getAddress() const noexcept {
@@ -34,6 +37,7 @@ const std::string &Persona::getAddress() const noexcept {
 
 void Persona::setAddress(std::string address) {
     this->address = std::move(address);
+    setLastModifiedDate(std::chrono::system_clock::now());
 }
 
 const std::string &Persona::getPhone() const noexcept {
@@ -42,4 +46,5 @@ const std::string &Persona::getPhone() const noexcept {
 
 void Persona::setPhone(std::string phone) {
     this->phone = std::move(phone);
+    setLastModifiedDate(std::chrono::system_clock::now());
 }

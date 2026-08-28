@@ -10,6 +10,7 @@ const std::string &Wifi::getNetworkName() const noexcept {
 
 void Wifi::setNetworkName(std::string networkName) {
     this->networkName = std::move(networkName);
+    setLastModifiedDate(std::chrono::system_clock::now());
 }
 
 const std::string &Wifi::getPassword() const noexcept {
@@ -18,4 +19,5 @@ const std::string &Wifi::getPassword() const noexcept {
 
 void Wifi::setPassword(std::string password) {
     this->password = std::move(password);
+    setLastModifiedDate(std::chrono::system_clock::now());
 }

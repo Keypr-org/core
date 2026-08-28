@@ -11,6 +11,7 @@ const std::string &Website::getTitle() const noexcept {
 
 void Website::setTitle(std::string title) {
     this->title = std::move(title);
+    setLastModifiedDate(std::chrono::system_clock::now());
 }
 
 const std::string &Website::getComments() const noexcept {
@@ -19,6 +20,7 @@ const std::string &Website::getComments() const noexcept {
 
 void Website::setComments(std::string comments) {
     this->comments = std::move(comments);
+    setLastModifiedDate(std::chrono::system_clock::now());
 }
 
 const std::string &Website::getUsername() const noexcept {
@@ -27,6 +29,7 @@ const std::string &Website::getUsername() const noexcept {
 
 void Website::setUsername(std::string username) {
     this->username = std::move(username);
+    setLastModifiedDate(std::chrono::system_clock::now());
 }
 
 const std::string &Website::getPassword() const noexcept {
@@ -35,6 +38,7 @@ const std::string &Website::getPassword() const noexcept {
 
 void Website::setPassword(std::string password) {
     this->password = std::move(password);
+    setLastModifiedDate(std::chrono::system_clock::now());
 }
 
 const std::string &Website::getUrl() const noexcept {
@@ -43,6 +47,7 @@ const std::string &Website::getUrl() const noexcept {
 
 void Website::setUrl(std::string url) {
     this->url = std::move(url);
+    setLastModifiedDate(std::chrono::system_clock::now());
 }
 
 std::shared_ptr<Persona> Website::getPersona() const noexcept {
@@ -51,6 +56,7 @@ std::shared_ptr<Persona> Website::getPersona() const noexcept {
 
 void Website::setPersona(std::shared_ptr<Persona> persona) {
     this->persona = persona;
+    setLastModifiedDate(std::chrono::system_clock::now());
 }
 
 const std::string &Website::getAlias() const noexcept {
@@ -59,4 +65,5 @@ const std::string &Website::getAlias() const noexcept {
 
 void Website::setAlias(std::string alias) {
     this->alias = std::move(alias);
+    setLastModifiedDate(std::chrono::system_clock::now());
 }

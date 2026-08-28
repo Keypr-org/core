@@ -10,6 +10,7 @@ const std::string &CreditCard::getCardHolderName() const noexcept {
 
 void CreditCard::setCardHolderName(std::string cardHolderName) {
     this->cardHolderName = std::move(cardHolderName);
+    setLastModifiedDate(std::chrono::system_clock::now());
 }
 
 const std::string &CreditCard::getCardNumber() const noexcept {
@@ -18,6 +19,7 @@ const std::string &CreditCard::getCardNumber() const noexcept {
 
 void CreditCard::setCardNumber(std::string cardNumber) {
     this->cardNumber = std::move(cardNumber);
+    setLastModifiedDate(std::chrono::system_clock::now());
 }
 
 const std::string &CreditCard::getExpiration() const noexcept {
@@ -26,6 +28,7 @@ const std::string &CreditCard::getExpiration() const noexcept {
 
 void CreditCard::setExpiration(std::string expiration) {
     this->expiration = std::move(expiration);
+    setLastModifiedDate(std::chrono::system_clock::now());
 }
 
 const std::string &CreditCard::getSecurityCode() const noexcept {
@@ -34,4 +37,5 @@ const std::string &CreditCard::getSecurityCode() const noexcept {
 
 void CreditCard::setSecurityCode(std::string securityCode) {
     this->securityCode = std::move(securityCode);
+    setLastModifiedDate(std::chrono::system_clock::now());
 }
