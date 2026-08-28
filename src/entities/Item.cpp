@@ -1,5 +1,7 @@
 #include "entities/Item.h"
 
+snowflake_t Item::snowflake;
+
 Item::Item() {
     static bool initialized = false;
 

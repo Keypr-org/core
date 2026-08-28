@@ -36,3 +36,16 @@ void VaultSession::removePersona(int64_t personaId) {
         }), personas.end());
     setLastModifiedDate(std::chrono::system_clock::now());
 }
+
+void VaultSession::addEntryToCategory(int64_t categoryId, std::unique_ptr<Entry> entry) {
+    auto it = std::find_if(categories.begin(), categories.end(), [categoryId](std::unique_ptr<Category> &category) {
+        return category->getId() == categoryId;
+        });
+
+    if (it != categories.end()) {
+        (*it)->addEntry(std::move(entry));
+        setLastModifiedDate(std::chrono::system_clock::now());
+    } else {
+        throw CategoryNotFoundError("Category with ID " + std::to_string(categoryId) + " not found.");
+    }
+}
