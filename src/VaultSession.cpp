@@ -17,7 +17,7 @@ const std::vector<Category> &VaultSession::getCategories() const noexcept {
 }
 
 void VaultSession::addCategory(const Category &category) {
-    categories.emplace_back(category);
+    categories.push_back(category);
     setLastModifiedDate(std::chrono::system_clock::now());
 }
 
@@ -26,7 +26,7 @@ const std::vector<Persona> &VaultSession::getPersonas() const noexcept {
 }
 
 void VaultSession::addPersona(const Persona &persona) {
-    personas.emplace_back(persona);
+    personas.push_back(persona);
     setLastModifiedDate(std::chrono::system_clock::now());
 }
 
@@ -35,4 +35,17 @@ void VaultSession::removePersona(int64_t personaId) {
         return persona.getId() == personaId;
         }), personas.end());
     setLastModifiedDate(std::chrono::system_clock::now());
+}
+
+void VaultSession::addEntryToCategory(int64_t categoryId, const Entry &entry) {
+    auto it = std::find_if(categories.begin(), categories.end(), [categoryId](const Category &category) {
+        return category.getId() == categoryId;
+        });
+
+    if (it != categories.end()) {
+        it->addEntry(entry);
+        setLastModifiedDate(std::chrono::system_clock::now());
+    } else {
+        throw CategoryNotFoundError("Category with ID " + std::to_string(categoryId) + " not found.");
+    }
 }

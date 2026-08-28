@@ -11,7 +11,7 @@ const std::vector<Entry> &Category::getEntries() const {
 }
 
 void Category::addEntry(const Entry &entry) {
-    entries.emplace_back(entry);
+    entries.push_back(entry);
 }
 
 void Category::removeEntry(int64_t entryId) {
