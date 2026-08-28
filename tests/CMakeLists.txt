@@ -11,6 +11,7 @@ add_executable(core_tests
 target_link_libraries(core_tests
     PRIVATE
         keypr-core
+        GTest::gmock
         GTest::gtest_main
 )
 
