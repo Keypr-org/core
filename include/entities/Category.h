@@ -9,7 +9,6 @@
 class Category : public Item {
 public:
     explicit Category(std::string name);
-    ~Category();
 
     const std::string &getName() const noexcept;
     const std::vector<std::unique_ptr<Entry>> &getEntries() const;

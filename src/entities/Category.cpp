@@ -2,10 +2,6 @@
 
 Category::Category(std::string name) : Item(), name(std::move(name)) {}
 
-Category::~Category() {
-    entries.clear();
-}
-
 const std::string &Category::getName() const noexcept {
     return name;
 }
