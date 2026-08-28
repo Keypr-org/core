@@ -1,6 +1,7 @@
 #pragma once
 
 #include "entities/Entry.h"
+#include "entities/Website.h"
 #include "entities/Persona.h"
 #include "entities/Category.h"
 #include "Types.h"
@@ -64,6 +65,12 @@ public:
      */
     void addEntryToCategory(int64_t categoryId, std::unique_ptr<Entry> entry);
 
+    /**
+     * Returns a website by its ID.
+     * @param entryId The ID of the website to find.
+     * @return A pointer to the website, or nullptr if not found.
+     */
+    const Website *getWebsiteById(int64_t entryId) const;
 
 private:
     VaultSession(DateTime creationDate, DateTime lastModifiedDate, std::string name, EncKey encKey, AuthKey authKey, std::vector<std::unique_ptr<Category>> categories, std::vector<std::shared_ptr<Persona>> personas);

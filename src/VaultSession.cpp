@@ -49,3 +49,15 @@ void VaultSession::addEntryToCategory(int64_t categoryId, std::unique_ptr<Entry>
         throw CategoryNotFoundError("Category with ID " + std::to_string(categoryId) + " not found.");
     }
 }
+
+const Website *VaultSession::getWebsiteById(int64_t entryId) const {
+    for (const auto &category : categories) {
+        for (const auto &entry : category->getEntries()) {
+            const auto *website = dynamic_cast<const Website *>(entry.get());
+            if (website && website->getId() == entryId) {
+                return website;
+            }
+        }
+    }
+    return nullptr;
+}
