@@ -9,6 +9,7 @@
 
 
 class VaultSessionTest : public ::testing::Test {
+protected:
     EncKey makeEncKey() {
         EncKey key{};
         return key;
