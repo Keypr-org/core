@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <memory>
 
 class VaultSession : public DatedItem {
 public:
@@ -29,25 +30,25 @@ public:
      * Returns the categories in the VaultSession.
      * @return The categories in the VaultSession.
      */
-    const std::vector<Category> &getCategories() const noexcept;
+    const std::vector<std::unique_ptr<Category>> &getCategories() const noexcept;
 
     /**
      * Adds a category to the VaultSession.
      * @param category The category to add.
      */
-    void addCategory(const Category &category);
+    void addCategory(std::unique_ptr<Category> category);
 
     /**
      * Returns the personas in the VaultSession.
      * @return The personas in the VaultSession.
      */
-    const std::vector<Persona> &getPersonas() const noexcept;
+    const std::vector<std::shared_ptr<Persona>> &getPersonas() const noexcept;
 
     /**
      * Adds a persona to the VaultSession.
      * @param persona The persona to add.
      */
-    void addPersona(const Persona &persona);
+    void addPersona(std::shared_ptr<Persona> persona);
 
     /**
      * Removes a persona from the VaultSession.
@@ -61,7 +62,7 @@ public:
      * @param entry The entry to add.
      * @throws CategoryNotFoundError if the category with the specified ID does not exist.
      */
-    void addEntryToCategory(int64_t categoryId, const Entry &entry);
+    void addEntryToCategory(int64_t categoryId, std::unique_ptr<Entry> entry);
 
     /**
      * Removes an entry from a category in the VaultSession.
@@ -74,7 +75,7 @@ public:
 
 
 private:
-    VaultSession(DateTime creationDate, DateTime lastModifiedDate, std::string name, EncKey encKey, AuthKey authKey, std::vector<Category> categories, std::vector<Persona> personas);
+    VaultSession(DateTime creationDate, DateTime lastModifiedDate, std::string name, EncKey encKey, AuthKey authKey, std::vector<std::unique_ptr<Category>> categories, std::vector<std::shared_ptr<Persona>> personas);
 
     /**
      * Finds a category by its ID.
@@ -82,13 +83,13 @@ private:
      * @return A reference to the found category.
      * @throws CategoryNotFoundError if the category with the specified ID does not exist.
      */
-    Category &findCategoryById(int64_t categoryId);
+    std::unique_ptr<Category> &findCategoryById(int64_t categoryId);
 
     const EncKey encKey;
     const AuthKey authKey;
     std::string name;
-    std::vector<Category> categories;
-    std::vector<Persona> personas;
+    std::vector<std::unique_ptr<Category>> categories;
+    std::vector<std::shared_ptr<Persona>> personas;
 };
 
 class VaultSessionError : public std::runtime_error {

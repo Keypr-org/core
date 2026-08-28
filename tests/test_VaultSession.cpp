@@ -6,6 +6,7 @@
 
 #include <chrono>
 #include <utility>
+#include <memory>
 
 
 class VaultSessionTest : public ::testing::Test {
@@ -20,13 +21,13 @@ protected:
         return key;
     }
 
-    Persona makePersona(std::string firstName, std::string lastName) {
-        return Persona(std::move(firstName), std::move(lastName), std::chrono::system_clock::time_point{},
+    std::shared_ptr<Persona> makePersona(std::string firstName, std::string lastName) {
+        return std::make_shared<Persona>(std::move(firstName), std::move(lastName), std::chrono::system_clock::time_point{},
             "Address", "000000000");
     }
 
-    Category makeCategory(std::string name) {
-        return Category(std::move(name));
+    std::unique_ptr<Category> makeCategory(std::string name) {
+        return std::make_unique<Category>(std::move(name));
     }
 
     class TestEntry : public Entry {
@@ -34,8 +35,9 @@ protected:
         explicit TestEntry(std::string notes = {}) : Entry(std::move(notes)) {}
     };
 
-    TestEntry makeEntry(std::string notes) {
-        return TestEntry(std::move(notes));
+
+    std::unique_ptr<Entry> makeEntry(std::string notes) {
+        return std::make_unique<TestEntry>(std::move(notes));
     }
 };
 
@@ -65,10 +67,10 @@ TEST_F(VaultSessionTest, AddCategoryAppendsCategoryAndUpdatesLastModifiedDate) {
     VaultSession session("My Vault", makeEncKey(), makeAuthKey());
     const auto previousLastModified = session.getLastModifiedDate();
 
-    session.addCategory(makeCategory("Passwords"));
+    session.addCategory(std::move(makeCategory("Passwords")));
 
     ASSERT_EQ(session.getCategories().size(), 1U);
-    EXPECT_EQ(session.getCategories().front().getName(), "Passwords");
+    EXPECT_EQ(session.getCategories().front()->getName(), "Passwords");
     EXPECT_GE(session.getLastModifiedDate(), previousLastModified);
 }
 
@@ -79,11 +81,11 @@ TEST_F(VaultSessionTest, AddPersonaAppendsPersonaAndUpdatesLastModifiedDate) {
     VaultSession session("My Vault", makeEncKey(), makeAuthKey());
     const auto previousLastModified = session.getLastModifiedDate();
 
-    session.addPersona(makePersona("Ada", "Lovelace"));
+    session.addPersona(std::move(makePersona("Ada", "Lovelace")));
 
     ASSERT_EQ(session.getPersonas().size(), 1U);
-    EXPECT_EQ(session.getPersonas().front().getFirstName(), "Ada");
-    EXPECT_EQ(session.getPersonas().front().getLastName(), "Lovelace");
+    EXPECT_EQ(session.getPersonas().front()->getFirstName(), "Ada");
+    EXPECT_EQ(session.getPersonas().front()->getLastName(), "Lovelace");
     EXPECT_GE(session.getLastModifiedDate(), previousLastModified);
 }
 
@@ -92,18 +94,18 @@ TEST_F(VaultSessionTest, AddPersonaAppendsPersonaAndUpdatesLastModifiedDate) {
  */
 TEST_F(VaultSessionTest, AddEntryToCategoryAppendsEntryToMatchingCategory) {
     VaultSession session("My Vault", makeEncKey(), makeAuthKey());
-    session.addCategory(makeCategory("Passwords"));
-    const auto categoryId = session.getCategories().front().getId();
-    const auto entry = makeEntry("gmail");
-    const auto entryId = entry.getId();
+    session.addCategory(std::move(makeCategory("Passwords")));
+    const auto categoryId = session.getCategories().front()->getId();
+    auto entry = makeEntry("gmail");
+    const auto entryId = entry->getId();
     const auto previousLastModified = session.getLastModifiedDate();
 
-    session.addEntryToCategory(categoryId, entry);
+    session.addEntryToCategory(categoryId, std::move(entry));
 
     ASSERT_EQ(session.getCategories().size(), 1U);
-    ASSERT_EQ(session.getCategories().front().getEntries().size(), 1U);
-    EXPECT_EQ(session.getCategories().front().getEntries().front().getNotes(), "gmail");
-    EXPECT_EQ(session.getCategories().front().getEntries().front().getId(), entryId);
+    ASSERT_EQ(session.getCategories().front()->getEntries().size(), 1U);
+    EXPECT_EQ(session.getCategories().front()->getEntries().front()->getNotes(), "gmail");
+    EXPECT_EQ(session.getCategories().front()->getEntries().front()->getId(), entryId);
     EXPECT_GE(session.getLastModifiedDate(), previousLastModified);
 }
 
@@ -112,17 +114,17 @@ TEST_F(VaultSessionTest, AddEntryToCategoryAppendsEntryToMatchingCategory) {
  */
 TEST_F(VaultSessionTest, AddEntryToCategoryOnlyChangesTargetCategory) {
     VaultSession session("My Vault", makeEncKey(), makeAuthKey());
-    session.addCategory(makeCategory("Passwords"));
-    session.addCategory(makeCategory("Banking"));
+    session.addCategory(std::move(makeCategory("Passwords")));
+    session.addCategory(std::move(makeCategory("Banking")));
 
-    const auto passwordsCategoryId = session.getCategories()[0].getId();
-    const auto bankingCategoryId = session.getCategories()[1].getId();
+    const auto passwordsCategoryId = session.getCategories()[0]->getId();
+    const auto bankingCategoryId = session.getCategories()[1]->getId();
 
-    session.addEntryToCategory(passwordsCategoryId, makeEntry("gmail"));
+    session.addEntryToCategory(passwordsCategoryId, std::move(makeEntry("gmail")));
 
-    ASSERT_EQ(session.getCategories()[0].getEntries().size(), 1U);
-    EXPECT_EQ(session.getCategories()[0].getEntries().front().getNotes(), "gmail");
-    EXPECT_TRUE(session.getCategories()[1].getEntries().empty());
+    ASSERT_EQ(session.getCategories()[0]->getEntries().size(), 1U);
+    EXPECT_EQ(session.getCategories()[0]->getEntries().front()->getNotes(), "gmail");
+    EXPECT_TRUE(session.getCategories()[1]->getEntries().empty());
     EXPECT_NE(passwordsCategoryId, bankingCategoryId);
 }
 
@@ -131,16 +133,16 @@ TEST_F(VaultSessionTest, AddEntryToCategoryOnlyChangesTargetCategory) {
  */
 TEST_F(VaultSessionTest, AddEntryToMissingCategoryThrowsAndLeavesStateUnchanged) {
     VaultSession session("My Vault", makeEncKey(), makeAuthKey());
-    session.addCategory(makeCategory("Passwords"));
+    session.addCategory(std::move(makeCategory("Passwords")));
     const auto lastModifiedBefore = session.getLastModifiedDate();
-    const auto missingCategoryId = session.getCategories().front().getId() + 1;
+    const auto missingCategoryId = session.getCategories().front()->getId() + 1;
 
-    EXPECT_THROW(session.addEntryToCategory(missingCategoryId, makeEntry("gmail")),
+    EXPECT_THROW(session.addEntryToCategory(missingCategoryId, std::move(makeEntry("gmail"))),
         CategoryNotFoundError);
 
     EXPECT_EQ(session.getCategories().size(), 1U);
-    EXPECT_EQ(session.getCategories().front().getName(), "Passwords");
-    EXPECT_TRUE(session.getCategories().front().getEntries().empty());
+    EXPECT_EQ(session.getCategories().front()->getName(), "Passwords");
+    EXPECT_TRUE(session.getCategories().front()->getEntries().empty());
     EXPECT_EQ(session.getLastModifiedDate(), lastModifiedBefore);
 }
 
@@ -150,19 +152,19 @@ TEST_F(VaultSessionTest, AddEntryToMissingCategoryThrowsAndLeavesStateUnchanged)
 TEST_F(VaultSessionTest, RemoveEntryFromCategoryRemovesMatchingEntry) {
     VaultSession session("My Vault", makeEncKey(), makeAuthKey());
     session.addCategory(makeCategory("Passwords"));
-    const auto categoryId = session.getCategories().front().getId();
+    const auto categoryId = session.getCategories().front()->getId();
 
-    const auto gmailEntry = makeEntry("gmail");
-    const auto gmailEntryId = gmailEntry.getId();
-    const auto bankEntry = makeEntry("bank");
-    session.addEntryToCategory(categoryId, gmailEntry);
-    session.addEntryToCategory(categoryId, bankEntry);
+    auto gmailEntry = makeEntry("gmail");
+    const auto gmailEntryId = gmailEntry->getId();
+    auto bankEntry = makeEntry("bank");
+    session.addEntryToCategory(categoryId, std::move(gmailEntry));
+    session.addEntryToCategory(categoryId, std::move(bankEntry));
     const auto lastModifiedBefore = session.getLastModifiedDate();
 
     session.removeEntryFromCategory(categoryId, gmailEntryId);
 
-    ASSERT_EQ(session.getCategories().front().getEntries().size(), 1U);
-    EXPECT_EQ(session.getCategories().front().getEntries().front().getNotes(), "bank");
+    ASSERT_EQ(session.getCategories().front()->getEntries().size(), 1U);
+    EXPECT_EQ(session.getCategories().front()->getEntries().front()->getNotes(), "bank");
     EXPECT_GE(session.getLastModifiedDate(), lastModifiedBefore);
 }
 
@@ -174,20 +176,20 @@ TEST_F(VaultSessionTest, RemoveEntryFromCategoryOnlyChangesTargetCategory) {
     session.addCategory(makeCategory("Passwords"));
     session.addCategory(makeCategory("Banking"));
 
-    const auto passwordsCategoryId = session.getCategories()[0].getId();
-    const auto bankingCategoryId = session.getCategories()[1].getId();
+    const auto passwordsCategoryId = session.getCategories()[0]->getId();
+    const auto bankingCategoryId = session.getCategories()[1]->getId();
 
-    const auto passwordsEntry = makeEntry("gmail");
-    const auto passwordsEntryId = passwordsEntry.getId();
-    const auto bankingEntry = makeEntry("visa");
-    session.addEntryToCategory(passwordsCategoryId, passwordsEntry);
-    session.addEntryToCategory(bankingCategoryId, bankingEntry);
+    auto passwordsEntry = makeEntry("gmail");
+    const auto passwordsEntryId = passwordsEntry->getId();
+    auto bankingEntry = makeEntry("visa");
+    session.addEntryToCategory(passwordsCategoryId, std::move(passwordsEntry));
+    session.addEntryToCategory(bankingCategoryId, std::move(bankingEntry));
 
     session.removeEntryFromCategory(passwordsCategoryId, passwordsEntryId);
 
-    EXPECT_TRUE(session.getCategories()[0].getEntries().empty());
-    ASSERT_EQ(session.getCategories()[1].getEntries().size(), 1U);
-    EXPECT_EQ(session.getCategories()[1].getEntries().front().getNotes(), "visa");
+    EXPECT_TRUE(session.getCategories()[0]->getEntries().empty());
+    ASSERT_EQ(session.getCategories()[1]->getEntries().size(), 1U);
+    EXPECT_EQ(session.getCategories()[1]->getEntries().front()->getNotes(), "visa");
     EXPECT_NE(passwordsCategoryId, bankingCategoryId);
 }
 
@@ -197,16 +199,17 @@ TEST_F(VaultSessionTest, RemoveEntryFromCategoryOnlyChangesTargetCategory) {
 TEST_F(VaultSessionTest, RemoveMissingEntryFromExistingCategoryLeavesCategoryUnchanged) {
     VaultSession session("My Vault", makeEncKey(), makeAuthKey());
     session.addCategory(makeCategory("Passwords"));
-    const auto categoryId = session.getCategories().front().getId();
+    const auto categoryId = session.getCategories().front()->getId();
 
-    const auto entry = makeEntry("gmail");
-    session.addEntryToCategory(categoryId, entry);
+    auto entry = makeEntry("gmail");
+    auto entryId = entry->getId();
+    session.addEntryToCategory(categoryId, std::move(entry));
     const auto lastModifiedBefore = session.getLastModifiedDate();
 
-    EXPECT_THROW(session.removeEntryFromCategory(categoryId, entry.getId() + 1), EntryNotFoundError);
+    EXPECT_THROW(session.removeEntryFromCategory(categoryId, entryId + 1), EntryNotFoundError);
 
-    ASSERT_EQ(session.getCategories().front().getEntries().size(), 1U);
-    EXPECT_EQ(session.getCategories().front().getEntries().front().getNotes(), "gmail");
+    ASSERT_EQ(session.getCategories().front()->getEntries().size(), 1U);
+    EXPECT_EQ(session.getCategories().front()->getEntries().front()->getNotes(), "gmail");
     EXPECT_GE(session.getLastModifiedDate(), lastModifiedBefore);
 }
 
@@ -217,13 +220,13 @@ TEST_F(VaultSessionTest, RemoveEntryFromMissingCategoryThrowsAndLeavesStateUncha
     VaultSession session("My Vault", makeEncKey(), makeAuthKey());
     session.addCategory(makeCategory("Passwords"));
     const auto lastModifiedBefore = session.getLastModifiedDate();
-    const auto missingCategoryId = session.getCategories().front().getId() + 1;
+    const auto missingCategoryId = session.getCategories().front()->getId() + 1;
 
     EXPECT_THROW(session.removeEntryFromCategory(missingCategoryId, 123), CategoryNotFoundError);
 
     EXPECT_EQ(session.getCategories().size(), 1U);
-    EXPECT_EQ(session.getCategories().front().getName(), "Passwords");
-    EXPECT_TRUE(session.getCategories().front().getEntries().empty());
+    EXPECT_EQ(session.getCategories().front()->getName(), "Passwords");
+    EXPECT_TRUE(session.getCategories().front()->getEntries().empty());
     EXPECT_EQ(session.getLastModifiedDate(), lastModifiedBefore);
 }
 
@@ -232,14 +235,14 @@ TEST_F(VaultSessionTest, RemoveEntryFromMissingCategoryThrowsAndLeavesStateUncha
  */
 TEST_F(VaultSessionTest, RemovePersonaRemovesOnlyMatchingPersona) {
     VaultSession session("My Vault", makeEncKey(), makeAuthKey());
-    session.addPersona(makePersona("Ada", "Lovelace"));
-    session.addPersona(makePersona("Grace", "Hopper"));
+    session.addPersona(std::move(makePersona("Ada", "Lovelace")));
+    session.addPersona(std::move(makePersona("Grace", "Hopper")));
 
-    session.removePersona(session.getPersonas().front().getId());
+    session.removePersona(session.getPersonas().front()->getId());
 
     ASSERT_EQ(session.getPersonas().size(), 1U);
-    EXPECT_EQ(session.getPersonas().front().getFirstName(), "Grace");
-    EXPECT_EQ(session.getPersonas().front().getLastName(), "Hopper");
+    EXPECT_EQ(session.getPersonas().front()->getFirstName(), "Grace");
+    EXPECT_EQ(session.getPersonas().front()->getLastName(), "Hopper");
 }
 
 /**
@@ -247,10 +250,10 @@ TEST_F(VaultSessionTest, RemovePersonaRemovesOnlyMatchingPersona) {
  */
 TEST_F(VaultSessionTest, RemoveMissingPersonaLeavesCollectionUnchanged) {
     VaultSession session("My Vault", makeEncKey(), makeAuthKey());
-    session.addPersona(makePersona("Ada", "Lovelace"));
+    session.addPersona(std::move(makePersona("Ada", "Lovelace")));
     const auto previousLastModified = session.getLastModifiedDate();
 
-    session.removePersona(session.getPersonas().front().getId() + 1);
+    session.removePersona(session.getPersonas().front()->getId() + 1);
 
     ASSERT_EQ(session.getPersonas().size(), 1U);
     EXPECT_GE(session.getLastModifiedDate(), previousLastModified);
