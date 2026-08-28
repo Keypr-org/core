@@ -76,6 +76,12 @@ public:
 private:
     VaultSession(DateTime creationDate, DateTime lastModifiedDate, std::string name, EncKey encKey, AuthKey authKey, std::vector<Category> categories, std::vector<Persona> personas);
 
+    /**
+     * Finds a category by its ID.
+     * @param categoryId The ID of the category to find.
+     * @return A reference to the found category.
+     * @throws CategoryNotFoundError if the category with the specified ID does not exist.
+     */
     Category &findCategoryById(int64_t categoryId);
 
     const EncKey encKey;
