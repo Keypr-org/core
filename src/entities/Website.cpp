@@ -50,8 +50,8 @@ void Website::setUrl(std::string url) {
     setLastModifiedDate(std::chrono::system_clock::now());
 }
 
-std::shared_ptr<Persona> Website::getPersona() const noexcept {
-    return persona.lock();
+std::weak_ptr<Persona> Website::getPersona() const noexcept {
+    return persona;
 }
 
 void Website::setPersona(std::shared_ptr<Persona> persona) {

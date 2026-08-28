@@ -3,6 +3,7 @@
 #include "Entry.h"
 #include <vector>
 #include <string>
+#include <memory>
 
 
 class Category : public Item {
@@ -10,13 +11,14 @@ public:
     explicit Category(std::string name);
 
     const std::string &getName() const noexcept;
-    const std::vector<Entry> &getEntries() const;
+
+    const std::vector<std::unique_ptr<Entry>> &getEntries() const;
 
     /**
      * Adds an entry to the category.
      * @param entry The entry to add.
      */
-    void addEntry(const Entry &entry);
+    void addEntry(std::unique_ptr<Entry> entry);
 
     /**
      * Removes an entry from the category by its ID.
@@ -26,5 +28,5 @@ public:
 
 private:
     std::string name;
-    std::vector<Entry> entries;
+    std::vector<std::unique_ptr<Entry>> entries;
 };

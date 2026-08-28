@@ -24,7 +24,7 @@ public:
     const std::string &getUrl() const noexcept;
     void setUrl(std::string url);
 
-    std::shared_ptr<Persona> getPersona() const noexcept;
+    std::weak_ptr<Persona> getPersona() const noexcept;
     void setPersona(std::shared_ptr<Persona> persona);
 
     const std::string &getAlias() const noexcept;
