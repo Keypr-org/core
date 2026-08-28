@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <sodium.h>
 #include <span>
+#include <chrono>
 
 using Bytes = std::span<const uint8_t>;
 using MutableBytes = std::span<uint8_t>;
@@ -19,3 +20,5 @@ using AuthMAC = std::array<uint8_t, crypto_auth_BYTES>;
 using EncMAC = std::array<uint8_t, crypto_secretbox_MACBYTES>;
 // Nonce for libsodium's crypto_secretbox API
 using EncNonce = std::array<uint8_t, crypto_secretbox_NONCEBYTES>;
+
+using DateTime = std::chrono::system_clock::time_point;
