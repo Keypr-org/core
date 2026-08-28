@@ -64,9 +64,26 @@ public:
      */
     void addEntryToCategory(int64_t categoryId, std::unique_ptr<Entry> entry);
 
+    /**
+     * Removes an entry from a category in the VaultSession.
+     * @param categoryId The ID of the category from which to remove the entry.
+     * @param entryId The ID of the entry to remove.
+     * @throws CategoryNotFoundError if the category with the specified ID does not exist.
+     * @throws EntryNotFoundError if the entry with the specified ID does not exist in the category.
+     */
+    void removeEntryFromCategory(int64_t categoryId, int64_t entryId);
+
 
 private:
     VaultSession(DateTime creationDate, DateTime lastModifiedDate, std::string name, EncKey encKey, AuthKey authKey, std::vector<std::unique_ptr<Category>> categories, std::vector<std::shared_ptr<Persona>> personas);
+
+    /**
+     * Finds a category by its ID.
+     * @param categoryId The ID of the category to find.
+     * @return A reference to the found category.
+     * @throws CategoryNotFoundError if the category with the specified ID does not exist.
+     */
+    std::unique_ptr<Category> &findCategoryById(int64_t categoryId);
 
     const EncKey encKey;
     const AuthKey authKey;
@@ -81,6 +98,11 @@ public:
 };
 
 class CategoryNotFoundError : public VaultSessionError {
+public:
+    using VaultSessionError::VaultSessionError;
+};
+
+class EntryNotFoundError : public VaultSessionError {
 public:
     using VaultSessionError::VaultSessionError;
 };
