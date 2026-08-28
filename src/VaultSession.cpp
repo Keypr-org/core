@@ -49,3 +49,18 @@ void VaultSession::addEntryToCategory(int64_t categoryId, std::unique_ptr<Entry>
         throw CategoryNotFoundError("Category with ID " + std::to_string(categoryId) + " not found.");
     }
 }
+
+std::vector<const Website *> VaultSession::getWebsiteByUrl(const std::string &url) const {
+    std::vector<const Website *> matchingWebsites;
+
+    for (const auto &category : categories) {
+        for (const auto &entry : category->getEntries()) {
+            const Website *website = dynamic_cast<const Website *>(entry.get());
+            if (website && (url.find(website->getUrl()) != std::string::npos) || (website->getUrl().find(url) != std::string::npos)) {
+                matchingWebsites.push_back(website);
+            }
+        }
+    }
+
+    return matchingWebsites;
+}

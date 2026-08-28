@@ -1,6 +1,7 @@
 #pragma once
 
 #include "entities/Entry.h"
+#include "entities/Website.h"
 #include "entities/Persona.h"
 #include "entities/Category.h"
 #include "Types.h"
@@ -63,6 +64,13 @@ public:
      * @throws CategoryNotFoundError if the category with the specified ID does not exist.
      */
     void addEntryToCategory(int64_t categoryId, std::unique_ptr<Entry> entry);
+
+    /**
+     * Returns all websites in the VaultSession with the specified URL.
+     * @param url The URL to search for.
+     * @return A vector of pointers to the matching websites.
+     */
+    std::vector<const Website *> getWebsiteByUrl(const std::string &url) const;
 
 
 private:
