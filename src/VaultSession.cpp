@@ -38,13 +38,27 @@ void VaultSession::removePersona(int64_t personaId) {
 }
 
 void VaultSession::addEntryToCategory(int64_t categoryId, const Entry &entry) {
+
+    Category &category = findCategoryById(categoryId);
+    category.addEntry(entry);
+    setLastModifiedDate(std::chrono::system_clock::now());
+}
+
+void VaultSession::removeEntryFromCategory(int64_t categoryId, int64_t entryId) {
+    Category &category = findCategoryById(categoryId);
+    if (!category.removeEntry(entryId)) {
+        throw EntryNotFoundError("Entry with ID " + std::to_string(entryId) + " not found in category with ID " + std::to_string(categoryId) + ".");
+    }
+    setLastModifiedDate(std::chrono::system_clock::now());
+}
+
+Category &VaultSession::findCategoryById(int64_t categoryId) {
     auto it = std::find_if(categories.begin(), categories.end(), [categoryId](const Category &category) {
         return category.getId() == categoryId;
         });
 
     if (it != categories.end()) {
-        it->addEntry(entry);
-        setLastModifiedDate(std::chrono::system_clock::now());
+        return *it;
     } else {
         throw CategoryNotFoundError("Category with ID " + std::to_string(categoryId) + " not found.");
     }

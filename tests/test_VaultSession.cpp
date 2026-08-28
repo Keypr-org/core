@@ -145,6 +145,89 @@ TEST_F(VaultSessionTest, AddEntryToMissingCategoryThrowsAndLeavesStateUnchanged)
 }
 
 /**
+ * Test that removing an entry from a category removes the matching entry and updates the last modified date.
+ */
+TEST_F(VaultSessionTest, RemoveEntryFromCategoryRemovesMatchingEntry) {
+    VaultSession session("My Vault", makeEncKey(), makeAuthKey());
+    session.addCategory(makeCategory("Passwords"));
+    const auto categoryId = session.getCategories().front().getId();
+
+    const auto gmailEntry = makeEntry("gmail");
+    const auto gmailEntryId = gmailEntry.getId();
+    const auto bankEntry = makeEntry("bank");
+    session.addEntryToCategory(categoryId, gmailEntry);
+    session.addEntryToCategory(categoryId, bankEntry);
+    const auto lastModifiedBefore = session.getLastModifiedDate();
+
+    session.removeEntryFromCategory(categoryId, gmailEntryId);
+
+    ASSERT_EQ(session.getCategories().front().getEntries().size(), 1U);
+    EXPECT_EQ(session.getCategories().front().getEntries().front().getNotes(), "bank");
+    EXPECT_GE(session.getLastModifiedDate(), lastModifiedBefore);
+}
+
+/**
+ * Test that removing an entry from a category only changes the targeted category.
+ */
+TEST_F(VaultSessionTest, RemoveEntryFromCategoryOnlyChangesTargetCategory) {
+    VaultSession session("My Vault", makeEncKey(), makeAuthKey());
+    session.addCategory(makeCategory("Passwords"));
+    session.addCategory(makeCategory("Banking"));
+
+    const auto passwordsCategoryId = session.getCategories()[0].getId();
+    const auto bankingCategoryId = session.getCategories()[1].getId();
+
+    const auto passwordsEntry = makeEntry("gmail");
+    const auto passwordsEntryId = passwordsEntry.getId();
+    const auto bankingEntry = makeEntry("visa");
+    session.addEntryToCategory(passwordsCategoryId, passwordsEntry);
+    session.addEntryToCategory(bankingCategoryId, bankingEntry);
+
+    session.removeEntryFromCategory(passwordsCategoryId, passwordsEntryId);
+
+    EXPECT_TRUE(session.getCategories()[0].getEntries().empty());
+    ASSERT_EQ(session.getCategories()[1].getEntries().size(), 1U);
+    EXPECT_EQ(session.getCategories()[1].getEntries().front().getNotes(), "visa");
+    EXPECT_NE(passwordsCategoryId, bankingCategoryId);
+}
+
+/**
+ * Test that removing a missing entry from an existing category throws a EntryNotFoundError and leaves the category unchanged.
+ */
+TEST_F(VaultSessionTest, RemoveMissingEntryFromExistingCategoryLeavesCategoryUnchanged) {
+    VaultSession session("My Vault", makeEncKey(), makeAuthKey());
+    session.addCategory(makeCategory("Passwords"));
+    const auto categoryId = session.getCategories().front().getId();
+
+    const auto entry = makeEntry("gmail");
+    session.addEntryToCategory(categoryId, entry);
+    const auto lastModifiedBefore = session.getLastModifiedDate();
+
+    EXPECT_THROW(session.removeEntryFromCategory(categoryId, entry.getId() + 1), EntryNotFoundError);
+
+    ASSERT_EQ(session.getCategories().front().getEntries().size(), 1U);
+    EXPECT_EQ(session.getCategories().front().getEntries().front().getNotes(), "gmail");
+    EXPECT_GE(session.getLastModifiedDate(), lastModifiedBefore);
+}
+
+/**
+ * Test that removing an entry from a missing category throws a CategoryNotFoundError and leaves the state unchanged.
+ */
+TEST_F(VaultSessionTest, RemoveEntryFromMissingCategoryThrowsAndLeavesStateUnchanged) {
+    VaultSession session("My Vault", makeEncKey(), makeAuthKey());
+    session.addCategory(makeCategory("Passwords"));
+    const auto lastModifiedBefore = session.getLastModifiedDate();
+    const auto missingCategoryId = session.getCategories().front().getId() + 1;
+
+    EXPECT_THROW(session.removeEntryFromCategory(missingCategoryId, 123), CategoryNotFoundError);
+
+    EXPECT_EQ(session.getCategories().size(), 1U);
+    EXPECT_EQ(session.getCategories().front().getName(), "Passwords");
+    EXPECT_TRUE(session.getCategories().front().getEntries().empty());
+    EXPECT_EQ(session.getLastModifiedDate(), lastModifiedBefore);
+}
+
+/**
  * Test that removing a persona from a VaultSession removes only the matching persona and updates the last modified date.
  */
 TEST_F(VaultSessionTest, RemovePersonaRemovesOnlyMatchingPersona) {
