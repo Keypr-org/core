@@ -7,7 +7,7 @@
 
 class Website : public Entry {
 public:
-    explicit Website(int64_t id, std::string notes, std::string title, std::string username, std::string password, std::string url, std::string comments = "", std::shared_ptr<Persona> persona = nullptr, std::string alias = "");
+    explicit Website(std::string notes, std::string title, std::string username, std::string password, std::string url, std::string comments = "", std::shared_ptr<Persona> persona = nullptr, std::string alias = "");
 
     const std::string &getTitle() const noexcept;
     void setTitle(std::string title);

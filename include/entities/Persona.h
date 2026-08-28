@@ -4,8 +4,8 @@
 
 class Persona : public DatedItem {
 public:
-    explicit Persona(int64_t id, std::string firstName, std::string lastName, DateTime dateOfBirth, std::string address, std::string phone);
-    explicit Persona(int64_t id, DateTime createdAt, DateTime updatedAt, std::string firstName, std::string lastName, DateTime dateOfBirth, std::string address, std::string phone);
+    explicit Persona(std::string firstName, std::string lastName, DateTime dateOfBirth, std::string address, std::string phone);
+    explicit Persona(DateTime createdAt, DateTime updatedAt, std::string firstName, std::string lastName, DateTime dateOfBirth, std::string address, std::string phone);
 
     const std::string &getFirstName() const noexcept;
     void setFirstName(std::string firstName);

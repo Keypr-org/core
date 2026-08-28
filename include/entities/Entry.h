@@ -11,7 +11,7 @@ public:
     void setNotes(std::string notes);
 
 protected:
-    explicit Entry(int64_t id, std::string notes = {});
+    explicit Entry(std::string notes = {});
 
 private:
     std::string notes;

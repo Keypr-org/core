@@ -1,13 +1,17 @@
 #pragma once
 
+#include "entities/Entry.h"
 #include "entities/Persona.h"
 #include "entities/Category.h"
 #include "Types.h"
+#include <stdexcept>
 #include <string>
 #include <vector>
 
 class VaultSession : public DatedItem {
 public:
+
+    VaultSession(std::string name, EncKey encKey, AuthKey authKey);
 
     const std::string &getName() const noexcept;
 
@@ -18,14 +22,25 @@ public:
     void addPersona(const Persona &persona);
     void removePersona(int64_t personaId);
 
+    void addEntryToCategory(int64_t categoryId, const Entry &entry);
+
 
 private:
-    VaultSession(int64_t id, std::string name, EncKey encKey, AuthKey authKey, std::vector<Category> categories = {}, std::vector<Persona> personas = {});
-    VaultSession(int64_t id, DateTime creationDate, DateTime lastModifiedDate, std::string name, EncKey encKey, AuthKey authKey, std::vector<Category> categories, std::vector<Persona> personas);
+    VaultSession(DateTime creationDate, DateTime lastModifiedDate, std::string name, EncKey encKey, AuthKey authKey, std::vector<Category> categories, std::vector<Persona> personas);
 
-    EncKey encKey;
-    AuthKey authKey;
+    const EncKey encKey;
+    const AuthKey authKey;
     std::string name;
     std::vector<Category> categories;
     std::vector<Persona> personas;
+};
+
+class VaultSessionError : public std::runtime_error {
+public:
+    using std::runtime_error::runtime_error;
+};
+
+class CategoryNotFoundError : public VaultSessionError {
+public:
+    using VaultSessionError::VaultSessionError;
 };

@@ -1,8 +1,8 @@
 #include "entities/Website.h"
 
 
-Website::Website(int64_t id, std::string notes, std::string title, std::string username, std::string password, std::string url, std::string comments, std::shared_ptr<Persona> persona, std::string alias)
-    : Entry(id, std::move(notes)), title(std::move(title)), comments(std::move(comments)), username(std::move(username)), password(std::move(password)), url(std::move(url)), persona(persona), alias(std::move(alias)) {
+Website::Website(std::string notes, std::string title, std::string username, std::string password, std::string url, std::string comments, std::shared_ptr<Persona> persona, std::string alias)
+    : Entry(std::move(notes)), title(std::move(title)), comments(std::move(comments)), username(std::move(username)), password(std::move(password)), url(std::move(url)), persona(persona), alias(std::move(alias)) {
 }
 
 const std::string &Website::getTitle() const noexcept {

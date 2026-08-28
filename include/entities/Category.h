@@ -7,7 +7,7 @@
 
 class Category : public Item {
 public:
-    explicit Category(int64_t id, std::string name);
+    explicit Category(std::string name);
 
     const std::string &getName() const noexcept;
     const std::vector<Entry> &getEntries() const;
