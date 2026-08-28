@@ -11,7 +11,17 @@ public:
 
     const std::string &getName() const noexcept;
     const std::vector<Entry> &getEntries() const;
+
+    /**
+     * Adds an entry to the category.
+     * @param entry The entry to add.
+     */
     void addEntry(const Entry &entry);
+
+    /**
+     * Removes an entry from the category by its ID.
+     * @param entryId The ID of the entry to remove.
+     */
     void removeEntry(int64_t entryId);
 
 private:

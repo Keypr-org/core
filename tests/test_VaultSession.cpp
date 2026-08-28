@@ -7,8 +7,8 @@
 #include <chrono>
 #include <utility>
 
-namespace {
 
+class VaultSessionTest : public ::testing::Test {
     EncKey makeEncKey() {
         EncKey key{};
         return key;
@@ -36,13 +36,13 @@ namespace {
     TestEntry makeEntry(std::string notes) {
         return TestEntry(std::move(notes));
     }
-
-} // namespace
-
-
-class VaultSessionTest : public ::testing::Test {
 };
 
+// ------------- TESTS --------------------
+
+/**
+ * Test that the VaultSession constructor initializes the name and empty collections.
+ */
 TEST_F(VaultSessionTest, ConstructorInitializesNameAndEmptyCollections) {
     const auto before = std::chrono::system_clock::now();
     VaultSession session("My Vault", makeEncKey(), makeAuthKey());
@@ -57,6 +57,9 @@ TEST_F(VaultSessionTest, ConstructorInitializesNameAndEmptyCollections) {
     EXPECT_LE(session.getLastModifiedDate(), after);
 }
 
+/**
+ * Test that adding a category to a VaultSession appends it to the categories collection and updates the last modified date.
+ */
 TEST_F(VaultSessionTest, AddCategoryAppendsCategoryAndUpdatesLastModifiedDate) {
     VaultSession session("My Vault", makeEncKey(), makeAuthKey());
     const auto previousLastModified = session.getLastModifiedDate();
@@ -68,6 +71,9 @@ TEST_F(VaultSessionTest, AddCategoryAppendsCategoryAndUpdatesLastModifiedDate) {
     EXPECT_GE(session.getLastModifiedDate(), previousLastModified);
 }
 
+/**
+ * Test that adding a persona to a VaultSession appends it to the personas collection and updates the last modified date.
+ */
 TEST_F(VaultSessionTest, AddPersonaAppendsPersonaAndUpdatesLastModifiedDate) {
     VaultSession session("My Vault", makeEncKey(), makeAuthKey());
     const auto previousLastModified = session.getLastModifiedDate();
@@ -80,6 +86,9 @@ TEST_F(VaultSessionTest, AddPersonaAppendsPersonaAndUpdatesLastModifiedDate) {
     EXPECT_GE(session.getLastModifiedDate(), previousLastModified);
 }
 
+/**
+ * Test that adding an entry to a category appends it to the matching category's entries and updates the last modified date.
+ */
 TEST_F(VaultSessionTest, AddEntryToCategoryAppendsEntryToMatchingCategory) {
     VaultSession session("My Vault", makeEncKey(), makeAuthKey());
     session.addCategory(makeCategory("Passwords"));
@@ -97,6 +106,9 @@ TEST_F(VaultSessionTest, AddEntryToCategoryAppendsEntryToMatchingCategory) {
     EXPECT_GE(session.getLastModifiedDate(), previousLastModified);
 }
 
+/**
+ * Test that adding an entry to a category only changes the target category and not others.
+ */
 TEST_F(VaultSessionTest, AddEntryToCategoryOnlyChangesTargetCategory) {
     VaultSession session("My Vault", makeEncKey(), makeAuthKey());
     session.addCategory(makeCategory("Passwords"));
@@ -113,6 +125,9 @@ TEST_F(VaultSessionTest, AddEntryToCategoryOnlyChangesTargetCategory) {
     EXPECT_NE(passwordsCategoryId, bankingCategoryId);
 }
 
+/**
+ * Test that adding an entry to a missing category throws a CategoryNotFoundError and leaves the state unchanged.
+ */
 TEST_F(VaultSessionTest, AddEntryToMissingCategoryThrowsAndLeavesStateUnchanged) {
     VaultSession session("My Vault", makeEncKey(), makeAuthKey());
     session.addCategory(makeCategory("Passwords"));
@@ -128,6 +143,9 @@ TEST_F(VaultSessionTest, AddEntryToMissingCategoryThrowsAndLeavesStateUnchanged)
     EXPECT_EQ(session.getLastModifiedDate(), lastModifiedBefore);
 }
 
+/**
+ * Test that removing a persona from a VaultSession removes only the matching persona and updates the last modified date.
+ */
 TEST_F(VaultSessionTest, RemovePersonaRemovesOnlyMatchingPersona) {
     VaultSession session("My Vault", makeEncKey(), makeAuthKey());
     session.addPersona(makePersona("Ada", "Lovelace"));
@@ -140,6 +158,9 @@ TEST_F(VaultSessionTest, RemovePersonaRemovesOnlyMatchingPersona) {
     EXPECT_EQ(session.getPersonas().front().getLastName(), "Hopper");
 }
 
+/**
+ * Test that removing a missing persona from a VaultSession leaves the collection unchanged and updates the last modified date.
+ */
 TEST_F(VaultSessionTest, RemoveMissingPersonaLeavesCollectionUnchanged) {
     VaultSession session("My Vault", makeEncKey(), makeAuthKey());
     session.addPersona(makePersona("Ada", "Lovelace"));
