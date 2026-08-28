@@ -2,35 +2,47 @@
 
 #include "Entry.h"
 #include "Persona.h"
-#include <string>
 #include <memory>
+#include <nlohmann/json.hpp>
+#include <string>
 
 class Website : public Entry {
-public:
-    explicit Website(std::string notes, std::string title, std::string username, std::string password, std::string url, std::string comments = "", std::shared_ptr<Persona> persona = nullptr, std::string alias = "");
+    friend class Entry;
 
-    const std::string &getTitle() const noexcept;
+  public:
+    explicit Website(std::string notes, std::string title, std::string username,
+                     std::string password, std::string url, std::string comments = "",
+                     std::shared_ptr<Persona> persona = nullptr, std::string alias = "");
+
+    const std::string& getTitle() const noexcept;
     void setTitle(std::string title);
 
-    const std::string &getComments() const noexcept;
+    const std::string& getComments() const noexcept;
     void setComments(std::string comments);
 
-    const std::string &getUsername() const noexcept;
+    const std::string& getUsername() const noexcept;
     void setUsername(std::string username);
 
-    const std::string &getPassword() const noexcept;
+    const std::string& getPassword() const noexcept;
     void setPassword(std::string password);
 
-    const std::string &getUrl() const noexcept;
+    const std::string& getUrl() const noexcept;
     void setUrl(std::string url);
 
     std::weak_ptr<Persona> getPersona() const noexcept;
     void setPersona(std::shared_ptr<Persona> persona);
 
-    const std::string &getAlias() const noexcept;
+    const std::string& getAlias() const noexcept;
     void setAlias(std::string alias);
 
-private:
+    std::string getType() const override { return "Website"; }
+
+    // Generate to_json/from_json for Website
+    NLOHMANN_DEFINE_DERIVED_TYPE_INTRUSIVE(Website, Entry, title, comments, username, password, url,
+                                           persona, alias)
+
+  private:
+    Website() = default;
     std::string title;
     std::string comments;
     std::string username;

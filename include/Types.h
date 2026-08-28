@@ -1,10 +1,11 @@
 #pragma once
 
 #include <array>
+#include <chrono>
 #include <cstdint>
+#include <nlohmann/json.hpp>
 #include <sodium.h>
 #include <span>
-#include <chrono>
 
 using Bytes = std::span<const uint8_t>;
 using MutableBytes = std::span<uint8_t>;
@@ -22,3 +23,5 @@ using EncMAC = std::array<uint8_t, crypto_secretbox_MACBYTES>;
 using EncNonce = std::array<uint8_t, crypto_secretbox_NONCEBYTES>;
 
 using DateTime = std::chrono::system_clock::time_point;
+
+using json = nlohmann::json;
