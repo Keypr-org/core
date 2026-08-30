@@ -18,10 +18,9 @@ class Wifi : public Entry {
 
     std::string getType() const override { return "Wifi"; }
 
-    // Generate to_json/from_json for Wifi
-    NLOHMANN_DEFINE_DERIVED_TYPE_INTRUSIVE(Wifi, Entry, networkName, password)
-
     friend std::unique_ptr<Entry> Entry::parse(const json& input);
+    friend void to_json(json& j, const Wifi& wifi);
+    friend void from_json(const json& j, Wifi& wifi);
 
   private:
     Wifi() = default;

@@ -26,11 +26,10 @@ class Persona : public DatedItem {
     const std::string& getPhone() const noexcept;
     void setPhone(std::string phone);
 
-    std::string getType() const override { return "Personna"; }
+    std::string getType() const override { return "Persona"; }
 
-    // Generate to_json/from_json for Persona
-    NLOHMANN_DEFINE_DERIVED_TYPE_INTRUSIVE(Persona, DatedItem, firstName, lastName, dateOfBirth,
-                                           address, phone)
+    friend void to_json(json& j, const Persona& persona);
+    friend void from_json(const json& j, Persona& persona);
 
   private:
     Persona() = default;

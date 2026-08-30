@@ -37,9 +37,8 @@ class Website : public Entry {
 
     std::string getType() const override { return "Website"; }
 
-    // Generate to_json/from_json for Website
-    NLOHMANN_DEFINE_DERIVED_TYPE_INTRUSIVE(Website, Entry, title, comments, username, password, url,
-                                           persona, alias)
+    friend void to_json(json& j, const Website& website);
+    friend void from_json(const json& j, Website& website);
 
   private:
     Website() = default;

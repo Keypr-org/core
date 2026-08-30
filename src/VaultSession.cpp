@@ -64,14 +64,26 @@ void to_json(json& j, const VaultSession& vaultSession) {
     j["name"] = vaultSession.name;
     j["categories"] = json::array();
     for (const auto& category : vaultSession.categories) {
-        j["categories"].push_back(category);
+        j["categories"].push_back(*category);
     }
     j["personas"] = json::array();
     for (const auto& persona : vaultSession.personas) {
-        j["personas"].push_back(persona);
+        j["personas"].push_back(*persona);
     }
 }
-void from_json(const json& j, VaultSession& vaultSession) {}
+void from_json(const json& j, VaultSession& vaultSession) {
+    vaultSession.parseDatedItem(j);
+
+    vaultSession.name = j.at("name").get<std::string>();
+    vaultSession.categories.clear();
+    for (const auto& categoryJson : j.at("categories")) {
+        vaultSession.categories.push_back(std::make_unique<Category>(categoryJson.get<Category>()));
+    }
+    vaultSession.personas.clear();
+    for (const auto& personaJson : j.at("personas")) {
+        vaultSession.personas.push_back(std::make_shared<Persona>(personaJson.get<Persona>()));
+    }
+}
 
 VaultSession VaultSession::parse(Bytes vaultBody) {
     // TODO: Implement this

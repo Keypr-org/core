@@ -24,4 +24,13 @@ using EncNonce = std::array<uint8_t, crypto_secretbox_NONCEBYTES>;
 
 using DateTime = std::chrono::system_clock::time_point;
 
+inline std::int64_t toUnixMilliseconds(DateTime dateTime) {
+    return std::chrono::duration_cast<std::chrono::milliseconds>(dateTime.time_since_epoch())
+        .count();
+}
+
+inline DateTime fromUnixMilliseconds(std::int64_t milliseconds) {
+    return DateTime{std::chrono::milliseconds{milliseconds}};
+}
+
 using json = nlohmann::json;

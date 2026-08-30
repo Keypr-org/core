@@ -24,9 +24,8 @@ class CreditCard : public Entry {
 
     std::string getType() const override { return "CreditCard"; }
 
-    // Generate to_json/from_json for CreditCard
-    NLOHMANN_DEFINE_DERIVED_TYPE_INTRUSIVE(CreditCard, Entry, cardHolderName, cardNumber,
-                                           expiration, securityCode)
+    friend void to_json(json& j, const CreditCard& card);
+    friend void from_json(const json& j, CreditCard& card);
 
   private:
     CreditCard() = default;
