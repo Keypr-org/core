@@ -1,18 +1,20 @@
 #pragma once
-#include "Item.h"
 #include "Entry.h"
-#include <vector>
-#include <string>
+#include "Item.h"
+#include "Types.h"
 #include <memory>
-
+#include <nlohmann/json.hpp>
+#include <string>
+#include <vector>
 
 class Category : public Item {
-public:
+  public:
     explicit Category(std::string name);
+    Category() = default;
 
-    const std::string &getName() const noexcept;
+    const std::string& getName() const noexcept;
 
-    const std::vector<std::unique_ptr<Entry>> &getEntries() const;
+    const std::vector<std::unique_ptr<Entry>>& getEntries() const;
 
     /**
      * Adds an entry to the category.
@@ -27,7 +29,12 @@ public:
      */
     bool removeEntry(int64_t entryId);
 
-private:
+    std::string getType() const override { return "Category"; }
+
+    friend void to_json(json& j, const Category& category);
+    friend void from_json(const json& j, Category& category);
+
+  private:
     std::string name;
     std::vector<std::unique_ptr<Entry>> entries;
 };
