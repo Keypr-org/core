@@ -2,7 +2,7 @@
 #include "FileHandler.h"
 #include "RawVault.h"
 
-bool VaultRepository::vaultExists(const std::string& filename) {
+bool VaultRepository::vaultExists(const std::string& filename) const {
     if (!FileHandler::fileExists(filename))
         return false;
     try {
