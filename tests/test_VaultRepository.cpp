@@ -222,3 +222,12 @@ TEST_F(VaultRepositoryTest, unlockVaultThrowsUnlockVaultErrorForCorruptedVaultFi
     VaultRepository repo;
     EXPECT_THROW(repo.unlockVault(masterpass, filename), UnlockVaultError);
 }
+
+/*
+ * createVault creates a new vault file with the given name and master password, and returns a
+ * VaultSession
+ */
+
+/*
+ * createVault throws CreateVaultError if the vault file already exists
+ */
