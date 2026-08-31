@@ -1,10 +1,11 @@
 #include "entities/Persona.h"
 
-Persona::Persona(std::string firstName, std::string lastName, DateTime dateOfBirth, std::string address, std::string phone)
-    : DatedItem(), firstName(std::move(firstName)), lastName(std::move(lastName)), dateOfBirth(dateOfBirth), address(std::move(address)), phone(std::move(phone)) {
-}
+Persona::Persona(std::string firstName, std::string lastName, DateTime dateOfBirth,
+                 std::string address, std::string phone)
+    : DatedItem(), firstName(std::move(firstName)), lastName(std::move(lastName)),
+      dateOfBirth(dateOfBirth), address(std::move(address)), phone(std::move(phone)) {}
 
-const std::string &Persona::getFirstName() const noexcept {
+const std::string& Persona::getFirstName() const noexcept {
     return firstName;
 }
 
@@ -13,7 +14,7 @@ void Persona::setFirstName(std::string firstName) {
     setLastModifiedDate(std::chrono::system_clock::now());
 }
 
-const std::string &Persona::getLastName() const noexcept {
+const std::string& Persona::getLastName() const noexcept {
     return lastName;
 }
 
@@ -31,7 +32,7 @@ void Persona::setDateOfBirth(DateTime dateOfBirth) noexcept {
     setLastModifiedDate(std::chrono::system_clock::now());
 }
 
-const std::string &Persona::getAddress() const noexcept {
+const std::string& Persona::getAddress() const noexcept {
     return address;
 }
 
@@ -40,11 +41,33 @@ void Persona::setAddress(std::string address) {
     setLastModifiedDate(std::chrono::system_clock::now());
 }
 
-const std::string &Persona::getPhone() const noexcept {
+const std::string& Persona::getPhone() const noexcept {
     return phone;
 }
 
 void Persona::setPhone(std::string phone) {
     this->phone = std::move(phone);
     setLastModifiedDate(std::chrono::system_clock::now());
+}
+
+void to_json(json& j, const Persona& persona) {
+    persona.serializeDatedItem(j);
+
+    j["firstName"] = persona.firstName;
+    j["lastName"] = persona.lastName;
+    j["dateOfBirth"] = toUnixMilliseconds(persona.dateOfBirth);
+    j["address"] = persona.address;
+    j["phone"] = persona.phone;
+}
+
+void from_json(const json& j, Persona& persona) {
+    persona.parseDatedItem(j);
+
+    j.at("firstName").get_to(persona.firstName);
+    j.at("lastName").get_to(persona.lastName);
+
+    persona.dateOfBirth = fromUnixMilliseconds(j.at("dateOfBirth").get<std::int64_t>());
+
+    j.at("address").get_to(persona.address);
+    j.at("phone").get_to(persona.phone);
 }

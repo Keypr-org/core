@@ -1,21 +1,29 @@
+/*
+ * @brief VaultSession class implementation
+ *
+ * This file contains the implementation of the VaultSession class, which represents a session in a
+ * vault application. The class provides methods to manage categories, personas, and entries within
+ * the session. It also includes serialization and deserialization methods for JSON representation.
+ *
+ * @author Nolan Evard
+ * @author Maikol Correia Da Silva
+ *
+ * @date 31.08.2026
+ */
 #include "VaultSession.h"
+#include "entities/CreditCard.h"
 #include "entities/Website.h"
 #include "entities/Wifi.h"
-#include "entities/CreditCard.h"
 
 VaultSession::VaultSession(std::string name, EncKey encKey, AuthKey authKey)
-    : VaultSession(std::chrono::system_clock::now(), std::chrono::system_clock::now(), std::move(name), std::move(encKey), std::move(authKey), {}, {}) {
-}
+    : DatedItem(std::chrono::system_clock::now(), std::chrono::system_clock::now()),
+      name(std::move(name)), encKey(std::move(encKey)), authKey(std::move(authKey)) {}
 
-VaultSession::VaultSession(DateTime creationDate, DateTime lastModifiedDate, std::string name, EncKey encKey, AuthKey authKey, std::vector<std::unique_ptr<Category>> categories, std::vector<std::shared_ptr<Persona>> personas)
-    : DatedItem(creationDate, lastModifiedDate), encKey(std::move(encKey)), authKey(std::move(authKey)), name(std::move(name)), categories(std::move(categories)), personas(std::move(personas)) {
-}
-
-const std::string &VaultSession::getName() const noexcept {
+const std::string& VaultSession::getName() const noexcept {
     return name;
 }
 
-const std::vector<std::unique_ptr<Category>> &VaultSession::getCategories() const noexcept {
+const std::vector<std::unique_ptr<Category>>& VaultSession::getCategories() const noexcept {
     return categories;
 }
 
@@ -24,53 +32,102 @@ void VaultSession::addCategory(std::unique_ptr<Category> category) {
     setLastModifiedDate(std::chrono::system_clock::now());
 }
 
-const std::vector<std::shared_ptr<Persona>> &VaultSession::getPersonas() const noexcept {
+const std::vector<std::unique_ptr<Persona>>& VaultSession::getPersonas() const noexcept {
     return personas;
 }
 
-void VaultSession::addPersona(std::shared_ptr<Persona> persona) {
+void VaultSession::addPersona(std::unique_ptr<Persona> persona) {
     personas.emplace_back(std::move(persona));
     setLastModifiedDate(std::chrono::system_clock::now());
 }
 
 void VaultSession::removePersona(int64_t personaId) {
-    personas.erase(std::remove_if(personas.begin(), personas.end(), [personaId](const std::shared_ptr<Persona> &persona) {
-        return persona->getId() == personaId;
-        }), personas.end());
+    personas.erase(std::remove_if(personas.begin(), personas.end(),
+                                  [personaId](const std::unique_ptr<Persona>& persona) {
+                                      return persona->getId() == personaId;
+                                  }),
+                   personas.end());
     setLastModifiedDate(std::chrono::system_clock::now());
 }
 
 void VaultSession::addEntryToCategory(int64_t categoryId, std::unique_ptr<Entry> entry) {
 
-    std::unique_ptr<Category> &category = findCategoryById(categoryId);
+    std::unique_ptr<Category>& category = findCategoryById(categoryId);
     category->addEntry(std::move(entry));
     setLastModifiedDate(std::chrono::system_clock::now());
 }
 
 void VaultSession::removeEntryFromCategory(int64_t categoryId, int64_t entryId) {
-    std::unique_ptr<Category> &category = findCategoryById(categoryId);
+    std::unique_ptr<Category>& category = findCategoryById(categoryId);
     if (!category->removeEntry(entryId)) {
-        throw EntryNotFoundError("Entry with ID " + std::to_string(entryId) + " not found in category with ID " + std::to_string(categoryId) + ".");
+        throw EntryNotFoundError("Entry with ID " + std::to_string(entryId) +
+                                 " not found in category with ID " + std::to_string(categoryId) +
+                                 ".");
     }
     setLastModifiedDate(std::chrono::system_clock::now());
 }
 
-std::unique_ptr<Category> &VaultSession::findCategoryById(int64_t categoryId) {
-    auto it = std::find_if(categories.begin(), categories.end(), [categoryId](std::unique_ptr<Category> &category) {
-        return category->getId() == categoryId;
-        });
+std::unique_ptr<Category>& VaultSession::findCategoryById(int64_t categoryId) {
+    auto it = std::find_if(categories.begin(), categories.end(),
+                           [categoryId](std::unique_ptr<Category>& category) {
+                               return category->getId() == categoryId;
+                           });
 
     if (it != categories.end()) {
         return *it;
     } else {
-        throw CategoryNotFoundError("Category with ID " + std::to_string(categoryId) + " not found.");
+        throw CategoryNotFoundError("Category with ID " + std::to_string(categoryId) +
+                                    " not found.");
     }
 }
 
-const Website *VaultSession::getWebsiteById(int64_t entryId) const {
-    for (const auto &category : categories) {
-        for (const auto &entry : category->getEntries()) {
-            const auto *website = dynamic_cast<const Website *>(entry.get());
+void to_json(json& j, const VaultSession& vaultSession) {
+    vaultSession.serializeDatedItem(j);
+
+    j["name"] = vaultSession.name;
+    j["categories"] = json::array();
+    for (const auto& category : vaultSession.categories) {
+        j["categories"].push_back(*category);
+    }
+    j["personas"] = json::array();
+    for (const auto& persona : vaultSession.personas) {
+        j["personas"].push_back(*persona);
+    }
+}
+void from_json(const json& j, VaultSession& vaultSession) {
+    vaultSession.parseDatedItem(j);
+
+    // Enc key and auth key attributes are not meant to be parsed to JSON for obvious security
+    // reasons
+
+    vaultSession.name = j.at("name").get<std::string>();
+    vaultSession.categories.clear();
+    for (const auto& categoryJson : j.at("categories")) {
+        vaultSession.categories.push_back(std::make_unique<Category>(categoryJson.get<Category>()));
+    }
+    vaultSession.personas.clear();
+    for (const auto& personaJson : j.at("personas")) {
+        vaultSession.personas.push_back(std::make_unique<Persona>(personaJson.get<Persona>()));
+    }
+}
+
+VaultSession VaultSession::parse(Bytes vaultBody) {
+
+    VaultSession result;
+    try {
+        const json j = json::parse(vaultBody.begin(), vaultBody.end());
+
+        from_json(j, result);
+    } catch (const json::exception& e) {
+        throw ParseError("Failed to parse VaultSession JSON: " + std::string(e.what()));
+    }
+    return result;
+}
+
+const Website* VaultSession::getWebsiteById(int64_t entryId) const {
+    for (const auto& category : categories) {
+        for (const auto& entry : category->getEntries()) {
+            const auto* website = dynamic_cast<const Website*>(entry.get());
             if (website && website->getId() == entryId) {
                 return website;
             }
@@ -79,26 +136,29 @@ const Website *VaultSession::getWebsiteById(int64_t entryId) const {
     return nullptr;
 }
 
-const std::unique_ptr<Category> &VaultSession::findCategoryById(int64_t categoryId) const {
-    auto it = std::find_if(categories.begin(), categories.end(), [categoryId](const std::unique_ptr<Category> &category) {
-        return category->getId() == categoryId;
-        });
+const std::unique_ptr<Category>& VaultSession::findCategoryById(int64_t categoryId) const {
+    auto it = std::find_if(categories.begin(), categories.end(),
+                           [categoryId](const std::unique_ptr<Category>& category) {
+                               return category->getId() == categoryId;
+                           });
 
     if (it != categories.end()) {
         return *it;
     } else {
-        throw CategoryNotFoundError("Category with ID " + std::to_string(categoryId) + " not found.");
+        throw CategoryNotFoundError("Category with ID " + std::to_string(categoryId) +
+                                    " not found.");
     }
 }
 
-std::vector<const Entry *> VaultSession::searchEntriesInCategory(int64_t categoryId, const std::string &searchTerm) const {
-    const std::unique_ptr<Category> &category = findCategoryById(categoryId);
+std::vector<const Entry*>
+VaultSession::searchEntriesInCategory(int64_t categoryId, const std::string& searchTerm) const {
+    const std::unique_ptr<Category>& category = findCategoryById(categoryId);
 
-    std::vector<const Entry *> matchingEntries;
-    for (const auto &entry : category->getEntries()) {
+    std::vector<const Entry*> matchingEntries;
+    for (const auto& entry : category->getEntries()) {
         if (entry->getNotes().find(searchTerm) != std::string::npos) {
             matchingEntries.push_back(entry.get());
-        } else if (const auto websiteEntry = dynamic_cast<const Website *>(entry.get())) {
+        } else if (const auto websiteEntry = dynamic_cast<const Website*>(entry.get())) {
             if (websiteEntry->getTitle().find(searchTerm) != std::string::npos ||
                 websiteEntry->getUsername().find(searchTerm) != std::string::npos ||
                 websiteEntry->getUrl().find(searchTerm) != std::string::npos ||
@@ -106,11 +166,11 @@ std::vector<const Entry *> VaultSession::searchEntriesInCategory(int64_t categor
                 websiteEntry->getAlias().find(searchTerm) != std::string::npos) {
                 matchingEntries.push_back(entry.get());
             }
-        } else if (const auto wifiEntry = dynamic_cast<const Wifi *>(entry.get())) {
+        } else if (const auto wifiEntry = dynamic_cast<const Wifi*>(entry.get())) {
             if (wifiEntry->getNetworkName().find(searchTerm) != std::string::npos) {
                 matchingEntries.push_back(entry.get());
             }
-        } else if (const auto cardEntry = dynamic_cast<const CreditCard *>(entry.get())) {
+        } else if (const auto cardEntry = dynamic_cast<const CreditCard*>(entry.get())) {
             if (cardEntry->getCardHolderName().find(searchTerm) != std::string::npos) {
                 matchingEntries.push_back(entry.get());
             }
@@ -120,13 +180,14 @@ std::vector<const Entry *> VaultSession::searchEntriesInCategory(int64_t categor
     return matchingEntries;
 }
 
-std::vector<const Website *> VaultSession::getWebsiteByUrl(const std::string &url) const {
-    std::vector<const Website *> matchingWebsites;
+std::vector<const Website*> VaultSession::getWebsiteByUrl(const std::string& url) const {
+    std::vector<const Website*> matchingWebsites;
 
-    for (const auto &category : categories) {
-        for (const auto &entry : category->getEntries()) {
-            const Website *website = dynamic_cast<const Website *>(entry.get());
-            if (website && (url.find(website->getUrl()) != std::string::npos) || (website->getUrl().find(url) != std::string::npos)) {
+    for (const auto& category : categories) {
+        for (const auto& entry : category->getEntries()) {
+            const Website* website = dynamic_cast<const Website*>(entry.get());
+            if (website && (url.find(website->getUrl()) != std::string::npos) ||
+                (website->getUrl().find(url) != std::string::npos)) {
                 matchingWebsites.push_back(website);
             }
         }

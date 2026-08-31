@@ -20,3 +20,11 @@ int64_t Item::getId() const {
 int64_t Item::getNextId() const {
     return snowflake.nextid();
 }
+
+void Item::parseItem(const json& j) {
+    j.at("id").get_to(id);
+}
+
+void Item::serializeItem(json& j) const {
+    j["id"] = id;
+}
