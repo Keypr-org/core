@@ -13,5 +13,5 @@ class VaultRepository {
      *
      * @return true if the vault file exists and is valid, false otherwise.
      */
-    bool vaultExists(std::string filename);
+    bool vaultExists(const std::string& filename);
 };
