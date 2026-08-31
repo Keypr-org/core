@@ -39,7 +39,11 @@ std::unique_ptr<VaultSession> VaultRepository::unlockVault(const std::string& ma
         // Verify the header MAC
         auto headerSpan = std::span<const uint8_t>(fileContents.data(), VAULT_HEADER_BYTES);
         if (!CryptoService::verify(authKey, rawVault.headerMAC(), headerSpan)) {
-            throw UnlockVaultError("Invalid master password or corrupted vault file");
+            // If the header MAC verification fails, it is most likely due to an incorrect master
+            // password. We don't want to throw an exception each time the user enters a wrong
+            // password. Instead, we return nullptr to indicate that the vault could not be
+            // unlocked.
+            return nullptr;
         }
 
         // Decrypt the vault body
@@ -61,10 +65,11 @@ std::unique_ptr<VaultSession> VaultRepository::unlockVault(const std::string& ma
         throw UnlockVaultError("Failed to parse vault file: " + std::string(e.what()));
     } catch (KeyDerivationError& e) {
         throw UnlockVaultError("Failed to derive keys: " + std::string(e.what()));
-    } catch (AuthenticationError& e) {
-        throw UnlockVaultError("Failed to verify vault integrity: " + std::string(e.what()));
     } catch (DecryptionError& e) {
-        throw UnlockVaultError("Failed to decrypt vault body: " + std::string(e.what()));
+        // Failing to decrypt is most likely due to an incorrect master password, so we don't want
+        // to throw an exception each time the user enters a wrong password. Instead, we return
+        // nullptr to indicate that the vault could not be unlocked.
+        return nullptr;
     } catch (ParseError& e) {
         throw UnlockVaultError("Failed to parse decrypted vault body: " + std::string(e.what()));
     }

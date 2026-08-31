@@ -200,14 +200,16 @@ TEST_F(VaultRepositoryTest,
 }
 
 /*
- * unlockVault throws UnlockVaultError for a valid vault file but incorrect master password
+ * unlockVault returns nullptr for a valid vault file but incorrect master password
  */
-TEST_F(VaultRepositoryTest,
-       unlockVaultThrowsUnlockVaultErrorForValidVaultFileAndIncorrectMasterPassword) {
+TEST_F(VaultRepositoryTest, unlockVaultReturnsNullptrForValidVaultFileAndIncorrectMasterPassword) {
     const auto filename = createVaultFile(true);
 
     VaultRepository repo;
-    EXPECT_THROW(repo.unlockVault("wrongpass", filename), UnlockVaultError);
+    EXPECT_NO_THROW({
+        auto session = repo.unlockVault("wrongpass", filename);
+        EXPECT_EQ(session, nullptr);
+    });
 }
 
 /*
