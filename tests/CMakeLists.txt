@@ -6,6 +6,7 @@ add_executable(core_tests
     test_VaultHeader.cpp
     test_RawVault.cpp
     test_VaultSession.cpp
+    test_VaultRepository.cpp
 )
 
 target_link_libraries(core_tests
