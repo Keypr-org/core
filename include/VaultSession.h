@@ -10,6 +10,7 @@
 #pragma once
 
 #include "Types.h"
+#include "VaultHeader.h"
 #include "entities/Category.h"
 #include "entities/Entry.h"
 #include "entities/Persona.h"
@@ -31,7 +32,8 @@ class VaultSession : public DatedItem {
      * @param encKey The encryption key for the VaultSession.
      * @param authKey The authentication key for the VaultSession.
      */
-    VaultSession(std::string name, EncKey encKey, AuthKey authKey);
+    VaultSession(std::string name, EncKey encKey, AuthKey authKey,
+                 std::unique_ptr<VaultHeader> header);
 
     /**
      * Returns the name of the VaultSession.
@@ -151,6 +153,7 @@ class VaultSession : public DatedItem {
 
     EncKey encKey;
     AuthKey authKey;
+    std::unique_ptr<VaultHeader> header;
     std::string name;
     std::vector<std::unique_ptr<Category>> categories;
     std::vector<std::unique_ptr<Persona>> personas;

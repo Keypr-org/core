@@ -31,6 +31,9 @@ class VaultRepository {
      */
     virtual std::unique_ptr<VaultSession> unlockVault(const std::string& masterpass,
                                                       const std::string& filename) const;
+
+    virtual std::unique_ptr<VaultSession> createVault(const std::string& vaultName,
+                                                      const std::string& masterpass) const;
 };
 
 // ----------  Vault repository exceptions ---------------
@@ -41,6 +44,11 @@ class VaultRepositoryError : public std::runtime_error {
 };
 
 class UnlockVaultError : public VaultRepositoryError {
+  public:
+    using VaultRepositoryError::VaultRepositoryError;
+};
+
+class CreateVaultError : public VaultRepositoryError {
   public:
     using VaultRepositoryError::VaultRepositoryError;
 };

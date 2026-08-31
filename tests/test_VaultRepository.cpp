@@ -224,10 +224,13 @@ TEST_F(VaultRepositoryTest, unlockVaultThrowsUnlockVaultErrorForCorruptedVaultFi
 }
 
 /*
- * createVault creates a new vault file with the given name and master password, and returns a
- * VaultSession
+ * createVault creates a new vault with the given name and returns a VaultSession
  */
-
-/*
- * createVault throws CreateVaultError if the vault file already exists
- */
+TEST_F(VaultRepositoryTest, createVaultCreatesNewVaultAndReturnsVaultSession) {
+    VaultRepository repo;
+    EXPECT_NO_THROW({
+        auto session = repo.createVault("New Vault", masterpass);
+        EXPECT_NE(session, nullptr);
+        EXPECT_EQ(session->getName(), "New Vault");
+    });
+}
