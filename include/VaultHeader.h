@@ -6,7 +6,7 @@
 #include <stdexcept>
 
 // Defines the size of the vault header in bytes. This is used for validation and parsing.
-#define VAULT_HEADER_BYTES 60
+#define VAULT_HEADER_BYTES 44
 #define VAULT_MAGIC_BYTES "KVLT2026"
 #define VAULT_FORMAT_CURRENT_VERSION 1
 
@@ -14,12 +14,12 @@
 #define MAGIC_BYTES_OFFSET 0
 #define FORMAT_VERSION_OFFSET 8
 #define ARGON2_SALT_OFFSET 12
-#define ARGON2_OPSLIMIT_OFFSET 44
-#define ARGON2_MEMLIMIT_OFFSET 52
+#define ARGON2_OPSLIMIT_OFFSET 28
+#define ARGON2_MEMLIMIT_OFFSET 36
 
 // Header size constants
 #define MAGIC_BYTES_SIZE 8
-#define ARGON2_SALT_SIZE 32
+#define ARGON2_SALT_SIZE 16
 
 class VaultHeader {
   private:
