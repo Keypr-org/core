@@ -24,6 +24,7 @@ add_library(keypr-core
     src/entities/Persona.cpp
     src/entities/Website.cpp
     src/entities/Wifi.cpp
+    src/VaultRepository.cpp
 )
 
 target_include_directories(keypr-core
