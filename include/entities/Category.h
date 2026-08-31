@@ -2,20 +2,19 @@
 #include "Entry.h"
 #include "Item.h"
 #include "Types.h"
+#include <memory>
 #include <nlohmann/json.hpp>
 #include <string>
 #include <vector>
-#include <string>
-#include <memory>
-
 
 class Category : public Item {
   public:
     explicit Category(std::string name);
+    Category() = default;
 
-    const std::string &getName() const noexcept;
+    const std::string& getName() const noexcept;
 
-    const std::vector<std::unique_ptr<Entry>> &getEntries() const;
+    const std::vector<std::unique_ptr<Entry>>& getEntries() const;
 
     /**
      * Adds an entry to the category.
@@ -35,7 +34,6 @@ class Category : public Item {
     friend void from_json(const json& j, Category& category);
 
   private:
-    Category() = default;
     std::string name;
     std::vector<std::unique_ptr<Entry>> entries;
 };

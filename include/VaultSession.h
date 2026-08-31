@@ -1,3 +1,12 @@
+/*
+ * @brief Represents a vault session that contains decrypted vault data, including categories,
+ * entries, and personas.
+ *
+ * @author Nolan Evard
+ * @author Maikol Correia Da Silva
+ *
+ * @date 31.08.2026
+ */
 #pragma once
 
 #include "Types.h"
@@ -42,13 +51,13 @@ class VaultSession : public DatedItem {
      * Returns the personas in the VaultSession.
      * @return The personas in the VaultSession.
      */
-    const std::vector<std::shared_ptr<Persona>>& getPersonas() const noexcept;
+    const std::vector<std::unique_ptr<Persona>>& getPersonas() const noexcept;
 
     /**
      * Adds a persona to the VaultSession.
      * @param persona The persona to add.
      */
-    void addPersona(std::shared_ptr<Persona> persona);
+    void addPersona(std::unique_ptr<Persona> persona);
 
     /**
      * Removes a persona from the VaultSession.
@@ -64,25 +73,37 @@ class VaultSession : public DatedItem {
      */
     void addEntryToCategory(int64_t categoryId, std::unique_ptr<Entry> entry);
 
+    /*
+     * @brief Returns the type of the VaultSession.
+     *
+     * @return A string representing the type of the VaultSession.
+     */
     std::string getType() const override { return "VaultSession"; }
 
+    /*
+     * @brief Parses a VaultSession from a JSON representation.
+     *
+     * @param vaultBody The JSON representation of the VaultSession.
+     *
+     * @return A VaultSession object parsed from the JSON representation.
+     */
     static VaultSession parse(Bytes vaultBody);
 
     friend void to_json(json& j, const VaultSession& vaultSession);
     friend void from_json(const json& j, VaultSession& vaultSession);
 
   private:
+    // Default constructor for VaultSession. Needed for JSON deserialization.
     VaultSession() = default;
-    VaultSession(DateTime creationDate, DateTime lastModifiedDate, std::string name, EncKey encKey,
-                 AuthKey authKey, std::vector<std::unique_ptr<Category>> categories,
-                 std::vector<std::shared_ptr<Persona>> personas);
 
     EncKey encKey;
     AuthKey authKey;
     std::string name;
     std::vector<std::unique_ptr<Category>> categories;
-    std::vector<std::shared_ptr<Persona>> personas;
+    std::vector<std::unique_ptr<Persona>> personas;
 };
+
+// ----------------------------- Custom exceptions -----------------------------
 
 class VaultSessionError : public std::runtime_error {
   public:
@@ -90,6 +111,11 @@ class VaultSessionError : public std::runtime_error {
 };
 
 class CategoryNotFoundError : public VaultSessionError {
+  public:
+    using VaultSessionError::VaultSessionError;
+};
+
+class ParseError : public VaultSessionError {
   public:
     using VaultSessionError::VaultSessionError;
 };

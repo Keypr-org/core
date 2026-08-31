@@ -1,16 +1,20 @@
+/*
+ * @brief VaultSession class implementation
+ *
+ * This file contains the implementation of the VaultSession class, which represents a session in a
+ * vault application. The class provides methods to manage categories, personas, and entries within
+ * the session. It also includes serialization and deserialization methods for JSON representation.
+ *
+ * @author Nolan Evard
+ * @author Maikol Correia Da Silva
+ *
+ * @date 31.08.2026
+ */
 #include "VaultSession.h"
 
 VaultSession::VaultSession(std::string name, EncKey encKey, AuthKey authKey)
-    : VaultSession(std::chrono::system_clock::now(), std::chrono::system_clock::now(),
-                   std::move(name), std::move(encKey), std::move(authKey), {}, {}) {}
-
-VaultSession::VaultSession(DateTime creationDate, DateTime lastModifiedDate, std::string name,
-                           EncKey encKey, AuthKey authKey,
-                           std::vector<std::unique_ptr<Category>> categories,
-                           std::vector<std::shared_ptr<Persona>> personas)
-    : DatedItem(creationDate, lastModifiedDate), encKey(std::move(encKey)),
-      authKey(std::move(authKey)), name(std::move(name)), categories(std::move(categories)),
-      personas(std::move(personas)) {}
+    : DatedItem(std::chrono::system_clock::now(), std::chrono::system_clock::now()),
+      name(std::move(name)), encKey(std::move(encKey)), authKey(std::move(authKey)) {}
 
 const std::string& VaultSession::getName() const noexcept {
     return name;
@@ -25,18 +29,18 @@ void VaultSession::addCategory(std::unique_ptr<Category> category) {
     setLastModifiedDate(std::chrono::system_clock::now());
 }
 
-const std::vector<std::shared_ptr<Persona>>& VaultSession::getPersonas() const noexcept {
+const std::vector<std::unique_ptr<Persona>>& VaultSession::getPersonas() const noexcept {
     return personas;
 }
 
-void VaultSession::addPersona(std::shared_ptr<Persona> persona) {
+void VaultSession::addPersona(std::unique_ptr<Persona> persona) {
     personas.emplace_back(std::move(persona));
     setLastModifiedDate(std::chrono::system_clock::now());
 }
 
 void VaultSession::removePersona(int64_t personaId) {
     personas.erase(std::remove_if(personas.begin(), personas.end(),
-                                  [personaId](const std::shared_ptr<Persona>& persona) {
+                                  [personaId](const std::unique_ptr<Persona>& persona) {
                                       return persona->getId() == personaId;
                                   }),
                    personas.end());
@@ -74,6 +78,9 @@ void to_json(json& j, const VaultSession& vaultSession) {
 void from_json(const json& j, VaultSession& vaultSession) {
     vaultSession.parseDatedItem(j);
 
+    // Enc key and auth key attributes are not meant to be parsed to JSON for obvious security
+    // reasons
+
     vaultSession.name = j.at("name").get<std::string>();
     vaultSession.categories.clear();
     for (const auto& categoryJson : j.at("categories")) {
@@ -81,11 +88,20 @@ void from_json(const json& j, VaultSession& vaultSession) {
     }
     vaultSession.personas.clear();
     for (const auto& personaJson : j.at("personas")) {
-        vaultSession.personas.push_back(std::make_shared<Persona>(personaJson.get<Persona>()));
+        vaultSession.personas.push_back(std::make_unique<Persona>(personaJson.get<Persona>()));
     }
 }
 
 VaultSession VaultSession::parse(Bytes vaultBody) {
-    // TODO: Implement this
-    return VaultSession();
+
+    VaultSession result;
+    try {
+        const json j = json::parse(vaultBody.begin(), vaultBody.end());
+
+        from_json(j, result);
+    } catch (const json::exception& e) {
+        throw ParseError("Failed to parse VaultSession JSON: " + std::string(e.what()));
+    }
+
+    return result;
 }

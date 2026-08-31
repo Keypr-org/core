@@ -5,12 +5,11 @@
 #include <string>
 
 class Entry : public DatedItem {
-public:
+  public:
     virtual ~Entry() = default;
 
     const std::string& getNotes() const noexcept;
     void setNotes(std::string notes);
-
 
     virtual std::string getType() const = 0;
 

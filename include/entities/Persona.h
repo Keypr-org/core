@@ -5,6 +5,8 @@
 
 class Persona : public DatedItem {
   public:
+    // Default constructor needed for JSON parsing
+    Persona() = default;
     explicit Persona(std::string firstName, std::string lastName, DateTime dateOfBirth,
                      std::string address, std::string phone);
     explicit Persona(DateTime createdAt, DateTime updatedAt, std::string firstName,
@@ -32,7 +34,6 @@ class Persona : public DatedItem {
     friend void from_json(const json& j, Persona& persona);
 
   private:
-    Persona() = default;
     std::string firstName;
     std::string lastName;
     DateTime dateOfBirth;

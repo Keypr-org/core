@@ -1,11 +1,10 @@
 #include "entities/Website.h"
 
 Website::Website(std::string notes, std::string title, std::string username, std::string password,
-                 std::string url, std::string comments, std::shared_ptr<Persona> persona,
-                 std::string alias)
+                 std::string url, std::string comments, int64_t personaId, std::string alias)
     : Entry(std::move(notes)), title(std::move(title)), comments(std::move(comments)),
       username(std::move(username)), password(std::move(password)), url(std::move(url)),
-      persona(persona), alias(std::move(alias)) {}
+      personaId(personaId), alias(std::move(alias)) {}
 
 const std::string& Website::getTitle() const noexcept {
     return title;
@@ -52,12 +51,12 @@ void Website::setUrl(std::string url) {
     setLastModifiedDate(std::chrono::system_clock::now());
 }
 
-std::weak_ptr<Persona> Website::getPersona() const noexcept {
-    return persona;
+int64_t Website::getPersonaId() const noexcept {
+    return personaId;
 }
 
-void Website::setPersona(std::shared_ptr<Persona> persona) {
-    this->persona = persona;
+void Website::setPersona(int64_t personaId) {
+    this->personaId = personaId;
     setLastModifiedDate(std::chrono::system_clock::now());
 }
 
@@ -79,12 +78,7 @@ void to_json(json& j, const Website& website) {
     j["password"] = website.password;
     j["url"] = website.url;
     j["alias"] = website.alias;
-
-    if (auto persona = website.persona.lock()) {
-        j["personaId"] = persona->getId();
-    } else {
-        j["personaId"] = nullptr;
-    }
+    j["personaId"] = website.personaId;
 }
 
 void from_json(const json& j, Website& website) {
@@ -96,8 +90,5 @@ void from_json(const json& j, Website& website) {
     j.at("password").get_to(website.password);
     j.at("url").get_to(website.url);
     j.at("alias").get_to(website.alias);
-
-    // TODO: Resolve persona lookup. We must point to an existing persona object as we store the
-    // persona relationship as a pointer
-    website.persona.reset();
+    j.at("personaId").get_to(website.personaId);
 }
