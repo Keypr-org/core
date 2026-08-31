@@ -9,7 +9,7 @@
 
 namespace fs = std::filesystem;
 
-class FileHandlerTest : public ::testing::Test {
+class VaultRepositoryTest : public ::testing::Test {
   protected:
     fs::path testDirectory;
 
@@ -83,7 +83,7 @@ class FileHandlerTest : public ::testing::Test {
  * vaultExists returns true if given file exists and is a valid vault file (RawVault parsing
  * succeeds)
  */
-TEST_F(FileHandlerTest, vaultExistsReturnsTrueForValidVaultFile) {
+TEST_F(VaultRepositoryTest, vaultExistsReturnsTrueForValidVaultFile) {
     const auto filename = createVaultFile(true);
 
     VaultRepository repo;
@@ -93,7 +93,7 @@ TEST_F(FileHandlerTest, vaultExistsReturnsTrueForValidVaultFile) {
 /*
  * vaultExists returns false if given file doesn't exist
  */
-TEST_F(FileHandlerTest, vaultExistsReturnsFalseForMissingFile) {
+TEST_F(VaultRepositoryTest, vaultExistsReturnsFalseForMissingFile) {
     const auto filename = path("missing_vaultfile.kvdb").string();
 
     VaultRepository repo;
@@ -104,7 +104,7 @@ TEST_F(FileHandlerTest, vaultExistsReturnsFalseForMissingFile) {
  * vaultExists returns false if given file exists but is not a valid vault file (RawVault parsing
  * fails)
  */
-TEST_F(FileHandlerTest, vaultExistsReturnsFalseForInvalidVaultFile) {
+TEST_F(VaultRepositoryTest, vaultExistsReturnsFalseForInvalidVaultFile) {
     const auto filename = createVaultFile(false);
 
     VaultRepository repo;
