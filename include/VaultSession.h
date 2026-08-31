@@ -66,6 +66,13 @@ public:
     void addEntryToCategory(int64_t categoryId, std::unique_ptr<Entry> entry);
 
     /**
+     * Returns all websites in the VaultSession with the specified URL.
+     * @param url The URL to search for.
+     * @return A vector of pointers to the matching websites.
+     */
+    std::vector<const Website *> getWebsiteByUrl(const std::string &url) const;
+
+    /**
      * Returns a website by its ID.
      * @param entryId The ID of the website to find.
      * @return A pointer to the website, or nullptr if not found.

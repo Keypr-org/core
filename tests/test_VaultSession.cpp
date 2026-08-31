@@ -46,6 +46,11 @@ protected:
         return std::make_unique<Website>(std::move(notes), std::move(title), std::move(username),
             std::move(password), std::move(url));
     }
+
+    std::unique_ptr<Website> makeWebsite(std::string url, std::string notes = "notes", std::string title = "Title") {
+        return std::make_unique<Website>(std::move(notes), std::move(title), "username", "password",
+            std::move(url));
+    }
 };
 
 // ------------- TESTS --------------------
@@ -216,6 +221,78 @@ TEST_F(VaultSessionTest, GetWebsiteByIdReturnsNullptrWhenWebsiteDoesNotExist) {
     const auto *foundWebsite = session.getWebsiteById(websiteId + 1);
 
     EXPECT_EQ(foundWebsite, nullptr);
+}
+
+/**
+ * Test that getWebsiteByUrl returns all websites matching the given URL.
+ */
+TEST_F(VaultSessionTest, GetWebsiteByUrlReturnsAllMatchingWebsites) {
+    VaultSession session("My Vault", makeEncKey(), makeAuthKey());
+    session.addCategory(std::move(makeCategory("Passwords")));
+    const auto categoryId = session.getCategories().front()->getId();
+
+    session.addEntryToCategory(categoryId, std::move(makeWebsite("https://example.com", "first", "First")));
+    session.addEntryToCategory(categoryId, std::move(makeWebsite("https://example.com", "second", "Second")));
+
+    const auto websites = session.getWebsiteByUrl("https://example.com");
+
+    ASSERT_EQ(websites.size(), 2U);
+    ASSERT_NE(websites[0], nullptr);
+    ASSERT_NE(websites[1], nullptr);
+    EXPECT_EQ(websites[0]->getUrl(), "https://example.com");
+    EXPECT_EQ(websites[1]->getUrl(), "https://example.com");
+    EXPECT_EQ(websites[0]->getNotes(), "first");
+    EXPECT_EQ(websites[1]->getNotes(), "second");
+}
+
+/**
+ * Test that getWebsiteByUrl returns an empty vector when no website matches the requested URL.
+ */
+TEST_F(VaultSessionTest, GetWebsiteByUrlReturnsEmptyVectorWhenNoWebsiteMatches) {
+    VaultSession session("My Vault", makeEncKey(), makeAuthKey());
+    session.addCategory(std::move(makeCategory("Passwords")));
+    session.addEntryToCategory(session.getCategories().front()->getId(),
+        std::move(makeWebsite("https://example.com")));
+
+    const auto websites = session.getWebsiteByUrl("https://missing.example.com");
+
+    EXPECT_TRUE(websites.empty());
+}
+
+/**
+ * Test that getWebsiteByUrl matches when the requested URL contains the website URL.
+ */
+TEST_F(VaultSessionTest, GetWebsiteByUrlMatchesWhenRequestedUrlContainsWebsiteUrl) {
+    VaultSession session("My Vault", makeEncKey(), makeAuthKey());
+    session.addCategory(std::move(makeCategory("Passwords")));
+    const auto categoryId = session.getCategories().front()->getId();
+
+    session.addEntryToCategory(categoryId, std::move(makeWebsite("example.com", "notes")));
+
+    const auto websites = session.getWebsiteByUrl("https://example.com/login");
+
+    ASSERT_EQ(websites.size(), 1U);
+    ASSERT_NE(websites[0], nullptr);
+    EXPECT_EQ(websites[0]->getUrl(), "example.com");
+    EXPECT_EQ(websites[0]->getNotes(), "notes");
+}
+
+/**
+ * Test that getWebsiteByUrl matches when the website URL contains the requested URL.
+ */
+TEST_F(VaultSessionTest, GetWebsiteByUrlMatchesWhenWebsiteUrlContainsRequestedUrl) {
+    VaultSession session("My Vault", makeEncKey(), makeAuthKey());
+    session.addCategory(std::move(makeCategory("Passwords")));
+    const auto categoryId = session.getCategories().front()->getId();
+
+    session.addEntryToCategory(categoryId, std::move(makeWebsite("https://example.com/login", "notes")));
+
+    const auto websites = session.getWebsiteByUrl("example.com");
+
+    ASSERT_EQ(websites.size(), 1U);
+    ASSERT_NE(websites[0], nullptr);
+    EXPECT_EQ(websites[0]->getUrl(), "https://example.com/login");
+    EXPECT_EQ(websites[0]->getNotes(), "notes");
 }
 
 /**
