@@ -25,8 +25,9 @@ class Category : public Item {
     /**
      * Removes an entry from the category by its ID.
      * @param entryId The ID of the entry to remove.
+     * @return true if the entry was found and removed, false otherwise.
      */
-    void removeEntry(int64_t entryId);
+    bool removeEntry(int64_t entryId);
 
     std::string getType() const override { return "Category"; }
 
