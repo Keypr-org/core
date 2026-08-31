@@ -67,6 +67,18 @@ std::unique_ptr<Category> &VaultSession::findCategoryById(int64_t categoryId) {
     }
 }
 
+const Website *VaultSession::getWebsiteById(int64_t entryId) const {
+    for (const auto &category : categories) {
+        for (const auto &entry : category->getEntries()) {
+            const auto *website = dynamic_cast<const Website *>(entry.get());
+            if (website && website->getId() == entryId) {
+                return website;
+            }
+        }
+    }
+    return nullptr;
+}
+
 const std::unique_ptr<Category> &VaultSession::findCategoryById(int64_t categoryId) const {
     auto it = std::find_if(categories.begin(), categories.end(), [categoryId](const std::unique_ptr<Category> &category) {
         return category->getId() == categoryId;

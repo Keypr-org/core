@@ -154,6 +154,71 @@ TEST_F(VaultSessionTest, AddEntryToMissingCategoryThrowsAndLeavesStateUnchanged)
 }
 
 /**
+ * Test that getWebsiteById returns the matching website when the ID exists.
+ */
+TEST_F(VaultSessionTest, GetWebsiteByIdReturnsMatchingWebsite) {
+    VaultSession session("My Vault", makeEncKey(), makeAuthKey());
+    session.addCategory(std::move(makeCategory("Passwords")));
+    const auto categoryId = session.getCategories().front()->getId();
+
+    auto website = makeWebsite("notes", "GitHub", "alice", "secret", "https://github.com");
+    const auto expectedWebsiteId = website->getId();
+    const auto expectedWebsite = website.get();
+    session.addEntryToCategory(categoryId, std::move(website));
+
+    const auto *foundWebsite = session.getWebsiteById(expectedWebsiteId);
+
+    ASSERT_NE(foundWebsite, nullptr);
+    EXPECT_EQ(foundWebsite, expectedWebsite);
+    EXPECT_EQ(foundWebsite->getId(), expectedWebsiteId);
+    EXPECT_EQ(foundWebsite->getTitle(), "GitHub");
+    EXPECT_EQ(foundWebsite->getUrl(), "https://github.com");
+}
+
+/**
+ * Test that getWebsiteById searches across all categories.
+ */
+TEST_F(VaultSessionTest, GetWebsiteByIdSearchesAcrossCategories) {
+    VaultSession session("My Vault", makeEncKey(), makeAuthKey());
+    session.addCategory(std::move(makeCategory("Personal")));
+    session.addCategory(std::move(makeCategory("Work")));
+
+    const auto personalCategoryId = session.getCategories()[0]->getId();
+    const auto workCategoryId = session.getCategories()[1]->getId();
+
+    auto personalWebsite = makeWebsite("notes", "Personal", "alice", "secret", "https://personal.example.com");
+    auto workWebsite = makeWebsite("notes", "Work", "bob", "secret", "https://work.example.com");
+    const auto personalWebsiteId = personalWebsite->getId();
+    const auto workWebsiteId = workWebsite->getId();
+
+    session.addEntryToCategory(personalCategoryId, std::move(personalWebsite));
+    session.addEntryToCategory(workCategoryId, std::move(workWebsite));
+
+    const auto *foundWebsite = session.getWebsiteById(workWebsiteId);
+
+    ASSERT_NE(foundWebsite, nullptr);
+    EXPECT_EQ(foundWebsite->getId(), workWebsiteId);
+    EXPECT_EQ(foundWebsite->getUrl(), "https://work.example.com");
+    EXPECT_NE(foundWebsite->getId(), personalWebsiteId);
+}
+
+/**
+ * Test that getWebsiteById returns nullptr when no website matches the given ID.
+ */
+TEST_F(VaultSessionTest, GetWebsiteByIdReturnsNullptrWhenWebsiteDoesNotExist) {
+    VaultSession session("My Vault", makeEncKey(), makeAuthKey());
+    session.addCategory(std::move(makeCategory("Passwords")));
+
+    auto website = makeWebsite("notes", "GitHub", "alice", "secret", "https://github.com");
+    auto websiteId = website->getId();
+    session.addEntryToCategory(session.getCategories().front()->getId(), std::move(website));
+
+    const auto *foundWebsite = session.getWebsiteById(websiteId + 1);
+
+    EXPECT_EQ(foundWebsite, nullptr);
+}
+
+/**
  * Test that removing an entry from a category removes the matching entry and updates the last modified date.
  */
 TEST_F(VaultSessionTest, RemoveEntryFromCategoryRemovesMatchingEntry) {
