@@ -38,13 +38,27 @@ void VaultSession::removePersona(int64_t personaId) {
 }
 
 void VaultSession::addEntryToCategory(int64_t categoryId, std::unique_ptr<Entry> entry) {
+
+    std::unique_ptr<Category> &category = findCategoryById(categoryId);
+    category->addEntry(std::move(entry));
+    setLastModifiedDate(std::chrono::system_clock::now());
+}
+
+void VaultSession::removeEntryFromCategory(int64_t categoryId, int64_t entryId) {
+    std::unique_ptr<Category> &category = findCategoryById(categoryId);
+    if (!category->removeEntry(entryId)) {
+        throw EntryNotFoundError("Entry with ID " + std::to_string(entryId) + " not found in category with ID " + std::to_string(categoryId) + ".");
+    }
+    setLastModifiedDate(std::chrono::system_clock::now());
+}
+
+std::unique_ptr<Category> &VaultSession::findCategoryById(int64_t categoryId) {
     auto it = std::find_if(categories.begin(), categories.end(), [categoryId](std::unique_ptr<Category> &category) {
         return category->getId() == categoryId;
         });
 
     if (it != categories.end()) {
-        (*it)->addEntry(std::move(entry));
-        setLastModifiedDate(std::chrono::system_clock::now());
+        return *it;
     } else {
         throw CategoryNotFoundError("Category with ID " + std::to_string(categoryId) + " not found.");
     }
