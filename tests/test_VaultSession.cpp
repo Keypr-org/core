@@ -3,6 +3,7 @@
 
 #include "VaultSession.h"
 #include "entities/Entry.h"
+#include "entities/Website.h"
 
 #include <chrono>
 #include <utility>
@@ -328,4 +329,139 @@ TEST_F(VaultSessionTest, RemoveMissingPersonaLeavesCollectionUnchanged) {
 
     ASSERT_EQ(session.getPersonas().size(), 1U);
     EXPECT_GE(session.getLastModifiedDate(), previousLastModified);
+}
+
+/**
+ * Test that searchEntriesInCategory returns the entries whose notes contain the search term.
+ */
+TEST_F(VaultSessionTest, SearchEntriesInCategoryReturnsMatchingEntries) {
+    VaultSession session("My Vault", makeEncKey(), makeAuthKey());
+    session.addCategory(std::move(makeCategory("Passwords")));
+    const auto categoryId = session.getCategories().front()->getId();
+
+    auto githubEntry = makeEntry("GitHub personal account");
+    const auto githubEntryId = githubEntry->getId();
+    auto gmailEntry = makeEntry("Gmail work account");
+    session.addEntryToCategory(categoryId, std::move(githubEntry));
+    session.addEntryToCategory(categoryId, std::move(gmailEntry));
+
+    const auto matches = session.searchEntriesInCategory(categoryId, "GitHub");
+
+    ASSERT_EQ(matches.size(), 1U);
+    ASSERT_NE(matches[0], nullptr);
+    EXPECT_EQ(matches[0]->getId(), githubEntryId);
+    EXPECT_EQ(matches[0]->getNotes(), "GitHub personal account");
+}
+
+/**
+ * Test that searchEntriesInCategory returns all matching entries when several notes contain the term.
+ */
+TEST_F(VaultSessionTest, SearchEntriesInCategoryReturnsAllMatchingEntries) {
+    VaultSession session("My Vault", makeEncKey(), makeAuthKey());
+    session.addCategory(std::move(makeCategory("Passwords")));
+    const auto categoryId = session.getCategories().front()->getId();
+
+    auto personalGitHubEntry = makeEntry("GitHub personal account");
+    auto workGitHubEntry = makeEntry("GitHub work account");
+    auto unrelatedEntry = makeEntry("Bitwarden backup");
+    const auto firstMatchId = personalGitHubEntry->getId();
+    const auto secondMatchId = workGitHubEntry->getId();
+    session.addEntryToCategory(categoryId, std::move(personalGitHubEntry));
+    session.addEntryToCategory(categoryId, std::move(workGitHubEntry));
+    session.addEntryToCategory(categoryId, std::move(unrelatedEntry));
+
+    const auto matches = session.searchEntriesInCategory(categoryId, "GitHub");
+
+    ASSERT_EQ(matches.size(), 2U);
+    ASSERT_NE(matches[0], nullptr);
+    ASSERT_NE(matches[1], nullptr);
+
+    std::vector<int64_t> matchedIds;
+    matchedIds.push_back(matches[0]->getId());
+    matchedIds.push_back(matches[1]->getId());
+
+    EXPECT_THAT(matchedIds, ::testing::UnorderedElementsAre(firstMatchId, secondMatchId));
+}
+
+/**
+ * Test that searchEntriesInCategory only returns entries from the requested category, even if other categories also match.
+ */
+TEST_F(VaultSessionTest, SearchEntriesInCategoryOnlyReturnsEntriesFromRequestedCategory) {
+    VaultSession session("My Vault", makeEncKey(), makeAuthKey());
+    session.addCategory(std::move(makeCategory("Personal")));
+    session.addCategory(std::move(makeCategory("Work")));
+
+    const auto personalCategoryId = session.getCategories()[0]->getId();
+    const auto workCategoryId = session.getCategories()[1]->getId();
+
+    auto personalGitHubEntry = makeEntry("GitHub personal account");
+    auto personalMailEntry = makeEntry("GitHub mail backup");
+    auto workGitHubEntry = makeEntry("GitHub work account");
+    const auto firstPersonalId = personalGitHubEntry->getId();
+    const auto secondPersonalId = personalMailEntry->getId();
+    const auto workId = workGitHubEntry->getId();
+
+    session.addEntryToCategory(personalCategoryId, std::move(personalGitHubEntry));
+    session.addEntryToCategory(personalCategoryId, std::move(personalMailEntry));
+    session.addEntryToCategory(workCategoryId, std::move(workGitHubEntry));
+
+    const auto matches = session.searchEntriesInCategory(personalCategoryId, "GitHub");
+
+    ASSERT_EQ(matches.size(), 2U);
+    std::vector<int64_t> matchedIds;
+    for (const auto *entry : matches) {
+        ASSERT_NE(entry, nullptr);
+        matchedIds.push_back(entry->getId());
+    }
+
+    EXPECT_THAT(matchedIds, ::testing::UnorderedElementsAre(firstPersonalId, secondPersonalId));
+    EXPECT_NE(matchedIds[0], workId);
+    EXPECT_NE(matchedIds[1], workId);
+}
+
+/**
+ * Test that searchEntriesInCategory can match a Website based on its URL.
+ */
+TEST_F(VaultSessionTest, SearchEntriesInCategoryMatchesWebsiteUrl) {
+    VaultSession session("My Vault", makeEncKey(), makeAuthKey());
+    session.addCategory(std::move(makeCategory("Passwords")));
+    const auto categoryId = session.getCategories().front()->getId();
+
+    auto website = makeWebsite("Example note", "GitHub", "alice", "secret", "https://github.com/alice");
+    const auto websiteId = website->getId();
+    session.addEntryToCategory(categoryId, std::move(website));
+
+    const auto matches = session.searchEntriesInCategory(categoryId, "github.com");
+
+    ASSERT_EQ(matches.size(), 1U);
+    ASSERT_NE(matches[0], nullptr);
+    EXPECT_EQ(matches[0]->getId(), websiteId);
+    EXPECT_EQ(matches[0]->getNotes(), "Example note");
+}
+
+/**
+ * Test that searchEntriesInCategory returns an empty vector when no entry matches the search term.
+ */
+TEST_F(VaultSessionTest, SearchEntriesInCategoryReturnsEmptyVectorWhenNoEntryMatches) {
+    VaultSession session("My Vault", makeEncKey(), makeAuthKey());
+    session.addCategory(std::move(makeCategory("Passwords")));
+    const auto categoryId = session.getCategories().front()->getId();
+
+    session.addEntryToCategory(categoryId, std::move(makeEntry("GitHub personal account")));
+    session.addEntryToCategory(categoryId, std::move(makeEntry("Gmail work account")));
+
+    const auto matches = session.searchEntriesInCategory(categoryId, "Bitwarden");
+
+    EXPECT_TRUE(matches.empty());
+}
+
+/**
+ * Test that searchEntriesInCategory throws a CategoryNotFoundError when the category does not exist.
+ */
+TEST_F(VaultSessionTest, SearchEntriesInCategoryThrowsWhenCategoryDoesNotExist) {
+    VaultSession session("My Vault", makeEncKey(), makeAuthKey());
+    session.addCategory(std::move(makeCategory("Passwords")));
+
+    EXPECT_THROW(session.searchEntriesInCategory(session.getCategories().front()->getId() + 1, "GitHub"),
+        CategoryNotFoundError);
 }

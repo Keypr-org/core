@@ -81,6 +81,15 @@ public:
      */
     void removeEntryFromCategory(int64_t categoryId, int64_t entryId);
 
+    /**
+     * Searches for entries in a category that match the given search term.
+     * @param categoryId The ID of the category to search in.
+     * @param searchTerm The term to search for in the entries.
+     * @return A vector of pointers to the matching entries.
+     * @throws CategoryNotFoundError if the category with the specified ID does not exist.
+     */
+    std::vector<const Entry *> searchEntriesInCategory(int64_t categoryId, const std::string &searchTerm) const;
+
 
 private:
     VaultSession(DateTime creationDate, DateTime lastModifiedDate, std::string name, EncKey encKey, AuthKey authKey, std::vector<std::unique_ptr<Category>> categories, std::vector<std::shared_ptr<Persona>> personas);
@@ -92,6 +101,14 @@ private:
      * @throws CategoryNotFoundError if the category with the specified ID does not exist.
      */
     std::unique_ptr<Category> &findCategoryById(int64_t categoryId);
+
+    /**
+     * Finds a category by its ID (const version).
+     * @param categoryId The ID of the category to find.
+     * @return A reference to the found category.
+     * @throws CategoryNotFoundError if the category with the specified ID does not exist.
+     */
+    const std::unique_ptr<Category> &findCategoryById(int64_t categoryId) const;
 
     const EncKey encKey;
     const AuthKey authKey;
