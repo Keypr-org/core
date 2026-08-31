@@ -1,4 +1,7 @@
 #include "VaultSession.h"
+#include "entities/Website.h"
+#include "entities/Wifi.h"
+#include "entities/CreditCard.h"
 
 VaultSession::VaultSession(std::string name, EncKey encKey, AuthKey authKey)
     : VaultSession(std::chrono::system_clock::now(), std::chrono::system_clock::now(), std::move(name), std::move(encKey), std::move(authKey), {}, {}) {
@@ -62,6 +65,59 @@ std::unique_ptr<Category> &VaultSession::findCategoryById(int64_t categoryId) {
     } else {
         throw CategoryNotFoundError("Category with ID " + std::to_string(categoryId) + " not found.");
     }
+}
+
+const Website *VaultSession::getWebsiteById(int64_t entryId) const {
+    for (const auto &category : categories) {
+        for (const auto &entry : category->getEntries()) {
+            const auto *website = dynamic_cast<const Website *>(entry.get());
+            if (website && website->getId() == entryId) {
+                return website;
+            }
+        }
+    }
+    return nullptr;
+}
+
+const std::unique_ptr<Category> &VaultSession::findCategoryById(int64_t categoryId) const {
+    auto it = std::find_if(categories.begin(), categories.end(), [categoryId](const std::unique_ptr<Category> &category) {
+        return category->getId() == categoryId;
+        });
+
+    if (it != categories.end()) {
+        return *it;
+    } else {
+        throw CategoryNotFoundError("Category with ID " + std::to_string(categoryId) + " not found.");
+    }
+}
+
+std::vector<const Entry *> VaultSession::searchEntriesInCategory(int64_t categoryId, const std::string &searchTerm) const {
+    const std::unique_ptr<Category> &category = findCategoryById(categoryId);
+
+    std::vector<const Entry *> matchingEntries;
+    for (const auto &entry : category->getEntries()) {
+        if (entry->getNotes().find(searchTerm) != std::string::npos) {
+            matchingEntries.push_back(entry.get());
+        } else if (const auto websiteEntry = dynamic_cast<const Website *>(entry.get())) {
+            if (websiteEntry->getTitle().find(searchTerm) != std::string::npos ||
+                websiteEntry->getUsername().find(searchTerm) != std::string::npos ||
+                websiteEntry->getUrl().find(searchTerm) != std::string::npos ||
+                websiteEntry->getComments().find(searchTerm) != std::string::npos ||
+                websiteEntry->getAlias().find(searchTerm) != std::string::npos) {
+                matchingEntries.push_back(entry.get());
+            }
+        } else if (const auto wifiEntry = dynamic_cast<const Wifi *>(entry.get())) {
+            if (wifiEntry->getNetworkName().find(searchTerm) != std::string::npos) {
+                matchingEntries.push_back(entry.get());
+            }
+        } else if (const auto cardEntry = dynamic_cast<const CreditCard *>(entry.get())) {
+            if (cardEntry->getCardHolderName().find(searchTerm) != std::string::npos) {
+                matchingEntries.push_back(entry.get());
+            }
+        }
+    }
+
+    return matchingEntries;
 }
 
 std::vector<const Website *> VaultSession::getWebsiteByUrl(const std::string &url) const {

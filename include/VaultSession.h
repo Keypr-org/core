@@ -73,6 +73,13 @@ public:
     std::vector<const Website *> getWebsiteByUrl(const std::string &url) const;
 
     /**
+     * Returns a website by its ID.
+     * @param entryId The ID of the website to find.
+     * @return A pointer to the website, or nullptr if not found.
+     */
+    const Website *getWebsiteById(int64_t entryId) const;
+
+    /**
      * Removes an entry from a category in the VaultSession.
      * @param categoryId The ID of the category from which to remove the entry.
      * @param entryId The ID of the entry to remove.
@@ -80,6 +87,15 @@ public:
      * @throws EntryNotFoundError if the entry with the specified ID does not exist in the category.
      */
     void removeEntryFromCategory(int64_t categoryId, int64_t entryId);
+
+    /**
+     * Searches for entries in a category that match the given search term.
+     * @param categoryId The ID of the category to search in.
+     * @param searchTerm The term to search for in the entries.
+     * @return A vector of pointers to the matching entries.
+     * @throws CategoryNotFoundError if the category with the specified ID does not exist.
+     */
+    std::vector<const Entry *> searchEntriesInCategory(int64_t categoryId, const std::string &searchTerm) const;
 
 
 private:
@@ -92,6 +108,14 @@ private:
      * @throws CategoryNotFoundError if the category with the specified ID does not exist.
      */
     std::unique_ptr<Category> &findCategoryById(int64_t categoryId);
+
+    /**
+     * Finds a category by its ID (const version).
+     * @param categoryId The ID of the category to find.
+     * @return A reference to the found category.
+     * @throws CategoryNotFoundError if the category with the specified ID does not exist.
+     */
+    const std::unique_ptr<Category> &findCategoryById(int64_t categoryId) const;
 
     const EncKey encKey;
     const AuthKey authKey;
