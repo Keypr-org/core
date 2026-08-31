@@ -54,6 +54,12 @@ std::vector<uint8_t> CryptoService::deriveKey(const std::string& masterpass, uin
 }
 
 AuthMAC CryptoService::authenticate(const AuthKey& key, Bytes content) {
+    // Initialize libsodium if it hasn't been initialized yet. It is safe to call sodium_init
+    // multiple times
+    if (sodium_init() < 0) {
+        throw KeyDerivationError("Failed to initialize libsodium");
+    }
+
     AuthMAC out{};
     if (crypto_auth(out.data(), content.data(), content.size(), key.data()) != 0) {
         throw AuthenticationError("Authentication failed");
@@ -70,6 +76,12 @@ bool CryptoService::verify(const AuthKey& key, const AuthMAC& in, Bytes content)
 
 std::vector<uint8_t> CryptoService::decrypt(const EncKey& key, const EncNonce& nonce,
                                             const EncMAC& mac, Bytes ciphertext) {
+    // Initialize libsodium if it hasn't been initialized yet. It is safe to call sodium_init
+    // multiple times
+    if (sodium_init() < 0) {
+        throw KeyDerivationError("Failed to initialize libsodium");
+    }
+
     std::vector<uint8_t> out(ciphertext.size());
     if (ciphertext.size() == 0) {
         return out;
