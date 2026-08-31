@@ -1,7 +1,10 @@
 #include <gtest/gtest.h>
 
 #include <filesystem>
+#include <sodium.h>
+#include <sodium/crypto_secretbox.h>
 
+#include "CryptoService.h"
 #include "FileHandler.h"
 #include "RawVault.h"
 #include "Types.h"
@@ -12,6 +15,7 @@ namespace fs = std::filesystem;
 class VaultRepositoryTest : public ::testing::Test {
   protected:
     fs::path testDirectory;
+    std::string masterpass = "pass";
 
     void SetUp() override {
         const auto timestamp = std::chrono::steady_clock::now().time_since_epoch().count();
@@ -29,8 +33,65 @@ class VaultRepositoryTest : public ::testing::Test {
 
     fs::path path(const std::string& filename) const { return testDirectory / filename; }
 
+    json makeVaultJson() {
+        json website = {{"type", "Website"},
+                        {"id", 3000},
+                        {"creationAt", 1704067200000LL},
+                        {"updatedAt", 1704067201000LL},
+                        {"notes", "Website notes"},
+                        {"title", "Example"},
+                        {"comments", "Example comments"},
+                        {"username", "alice"},
+                        {"password", "website-password"},
+                        {"url", "https://example.com"},
+                        {"alias", "Example alias"},
+                        {"personaId", 4000}};
+
+        json wifi = {{"type", "Wifi"},
+                     {"id", 3001},
+                     {"creationAt", 1704067200000LL},
+                     {"updatedAt", 1704067201000LL},
+                     {"notes", "Wi-Fi notes"},
+                     {"networkName", "Home Wi-Fi"},
+                     {"password", "wifi-password"}};
+
+        json creditCard = {{"type", "CreditCard"},
+                           {"id", 3002},
+                           {"creationAt", 1704067200000LL},
+                           {"updatedAt", 1704067201000LL},
+                           {"notes", "Card notes"},
+                           {"cardHolderName", "Alice Example"},
+                           {"cardNumber", "4111111111111111"},
+                           {"expiration", "12/30"},
+                           {"securityCode", "123"}};
+
+        return {{"id", 1000},
+                {"creationAt", 1704067200000LL},
+                {"updatedAt", 1704153600000LL},
+                {"name", "Parsed Vault"},
+                {"categories",
+                 {{{"id", 2000}, {"name", "Passwords"}, {"entries", {website, wifi, creditCard}}}}},
+                {"personas",
+                 {{{"id", 4000},
+                   {"creationAt", 1704067200000LL},
+                   {"updatedAt", 1704067201000LL},
+                   {"firstName", "Alice"},
+                   {"lastName", "Example"},
+                   {"dateOfBirth", 946684800000LL},
+                   {"address", "Example Street 1"},
+                   {"phone", "+41 79 123 45 67"}}}}};
+    }
+
     std::string createVaultFile(bool valid) {
-        std::array<uint8_t, VAULT_FILE_MIN_SIZE> testData;
+        json vaultJson = makeVaultJson();
+        std::string vaultBody = vaultJson.dump();
+
+        std::vector<uint8_t> testData(RAW_VAULT_BYTES + vaultBody.size());
+
+        if (sodium_init() < 0) {
+            throw std::runtime_error("Failed to initialize libsodium");
+        }
+
         fs::path filepath = path((valid ? "valid" : "invalid") + std::string("_vaultfile.kvdb"));
 
         // Create header
@@ -52,24 +113,36 @@ class VaultRepositoryTest : public ::testing::Test {
                   reinterpret_cast<uint8_t*>(&argon2MemLimit) + sizeof(argon2MemLimit),
                   testData.begin() + ARGON2_MEMLIMIT_OFFSET);
 
-        // Create header MAC
-        std::array<uint8_t, 32> headerMAC;
-        randombytes_buf(headerMAC.data(), headerMAC.size());
-        std::copy(headerMAC.begin(), headerMAC.end(), testData.begin() + HEADER_MAC_OFFSET);
-
         // Create XSalsa20 nonce
         std::array<uint8_t, 24> xSalsa20Nonce;
         randombytes_buf(xSalsa20Nonce.data(), xSalsa20Nonce.size());
         std::copy(xSalsa20Nonce.begin(), xSalsa20Nonce.end(),
                   testData.begin() + XSALSA20_NONCE_OFFSET);
 
-        // Create ciphertext MAC
-        std::array<uint8_t, 16> ciphertextMAC;
-        randombytes_buf(ciphertextMAC.data(), ciphertextMAC.size());
+        // Create header MAC
+        std::vector<uint8_t> key =
+            CryptoService::deriveKey(masterpass, crypto_secretbox_KEYBYTES + crypto_auth_KEYBYTES,
+                                     argon2Salt, argon2OpLimit, argon2MemLimit);
+        std::vector<uint8_t> authKey(key.begin() + crypto_secretbox_KEYBYTES, key.end());
+        std::array<uint8_t, 32> headerMAC;
+        crypto_auth(headerMAC.data(), testData.data(), VAULT_HEADER_BYTES, authKey.data());
+
+        std::copy(headerMAC.begin(), headerMAC.end(), testData.begin() + HEADER_MAC_OFFSET);
+
+        // Create ciphertextMAC + ciphertext from makeVaultJson()
+        // Encrypt the vault body with XSalsa20 using a key derived from the master password and the
+        // Argon2 salt
+        std::vector<uint8_t> ciphertext(vaultBody.size());
+        std::array<uint8_t, CIPHERTEXT_MAC_BYTES> ciphertextMAC;
+
+        std::vector<uint8_t> encKey(key.begin(), key.begin() + crypto_secretbox_KEYBYTES);
+
+        crypto_secretbox_detached(ciphertext.data(), ciphertextMAC.data(),
+                                  reinterpret_cast<const uint8_t*>(vaultBody.data()),
+                                  vaultBody.size(), xSalsa20Nonce.data(), encKey.data());
+
         std::copy(ciphertextMAC.begin(), ciphertextMAC.end(),
                   testData.begin() + CIPHERTEXT_MAC_OFFSET);
-        // Create ciphertext
-        std::vector<uint8_t> ciphertext(VAULT_BODY_MIN_SIZE, 0);
         std::copy(ciphertext.begin(), ciphertext.end(), testData.begin() + CIPHERTEXT_OFFSET);
 
         // Write file
@@ -109,4 +182,41 @@ TEST_F(VaultRepositoryTest, vaultExistsReturnsFalseForInvalidVaultFile) {
 
     VaultRepository repo;
     EXPECT_FALSE(repo.vaultExists(filename));
+}
+
+/*
+ * unlockVault returns a VaultSession for a valid vault file and correct master password
+ */
+TEST_F(VaultRepositoryTest,
+       unlockVaultReturnsVaultSessionForValidVaultFileAndCorrectMasterPassword) {
+    const auto filename = createVaultFile(true);
+
+    VaultRepository repo;
+    EXPECT_NO_THROW({
+        auto session = repo.unlockVault(masterpass, filename);
+        EXPECT_NE(session, nullptr);
+        EXPECT_EQ(session->getName(), "Parsed Vault");
+    });
+}
+
+/*
+ * unlockVault throws UnlockVaultError for a valid vault file but incorrect master password
+ */
+TEST_F(VaultRepositoryTest,
+       unlockVaultThrowsUnlockVaultErrorForValidVaultFileAndIncorrectMasterPassword) {
+    const auto filename = createVaultFile(true);
+
+    VaultRepository repo;
+    EXPECT_THROW(repo.unlockVault("wrongpass", filename), UnlockVaultError);
+}
+
+/*
+ * unlockVault throws UnlockVaultError for a valid vault file but corrupted vault file (RawVault
+ * parsing fails)
+ */
+TEST_F(VaultRepositoryTest, unlockVaultThrowsUnlockVaultErrorForCorruptedVaultFile) {
+    const auto filename = createVaultFile(false);
+
+    VaultRepository repo;
+    EXPECT_THROW(repo.unlockVault(masterpass, filename), UnlockVaultError);
 }

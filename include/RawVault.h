@@ -7,14 +7,6 @@
 #include <stdexcept>
 #include <vector>
 
-// Defines the size of a raw vault in bytes.
-#define RAW_VAULT_BYTES 132
-// Defines the minimum size of a vault body in bytes. This was determined by measuring the size of a
-// minimal vault body
-#define VAULT_BODY_MIN_SIZE 142
-// Defines the minimum size of a vault file in bytes.
-#define VAULT_FILE_MIN_SIZE (VAULT_HEADER_BYTES + RAW_VAULT_BYTES + VAULT_BODY_MIN_SIZE)
-
 // Size constants
 #define HEADER_MAC_BYTES 32
 #define XSALSA20_NONCE_BYTES 24
@@ -26,17 +18,26 @@
 #define CIPHERTEXT_MAC_OFFSET (XSALSA20_NONCE_OFFSET + XSALSA20_NONCE_BYTES)
 #define CIPHERTEXT_OFFSET (CIPHERTEXT_MAC_OFFSET + CIPHERTEXT_MAC_BYTES)
 
+// Defines the minimum size of a vault body in bytes. This was determined by measuring the size of a
+// minimal vault body
+#define VAULT_BODY_MIN_SIZE 142
+// Defines the size of a raw vault in bytes.
+#define RAW_VAULT_BYTES (CIPHERTEXT_OFFSET)
+// Defines the minimum size of a vault file in bytes.
+#define VAULT_FILE_MIN_SIZE (RAW_VAULT_BYTES + VAULT_BODY_MIN_SIZE)
+
 class RawVault {
   private:
     const VaultHeader _header;
-    const std::array<uint8_t, 32> _headerMAC;
-    const std::array<uint8_t, 24> _xSalsa20Nonce;
-    const std::array<uint8_t, 16> _ciphertextMAC;
+    const AuthMAC _headerMAC;
+    const std::array<uint8_t, XSALSA20_NONCE_BYTES> _xSalsa20Nonce;
+    const std::array<uint8_t, CIPHERTEXT_MAC_BYTES> _ciphertextMAC;
     const std::vector<uint8_t> _ciphertext;
 
     // Constructor is private as a RawVault should only be instanciated using its parse() method
-    RawVault(VaultHeader header, std::array<uint8_t, 32> headerMAC,
-             std::array<uint8_t, 24> xSalsa20Nonce, std::array<uint8_t, 16> ciphertextMAC,
+    RawVault(VaultHeader header, AuthMAC headerMAC,
+             std::array<uint8_t, XSALSA20_NONCE_BYTES> xSalsa20Nonce,
+             std::array<uint8_t, CIPHERTEXT_MAC_BYTES> ciphertextMAC,
              std::vector<uint8_t> ciphertext)
         : _header(header), _headerMAC(headerMAC), _xSalsa20Nonce(xSalsa20Nonce),
           _ciphertextMAC(ciphertextMAC), _ciphertext(ciphertext) {}
@@ -44,9 +45,9 @@ class RawVault {
   public:
     // Getters
     VaultHeader header() const { return _header; }
-    Bytes headerMAC() const { return _headerMAC; }
-    Bytes xSalsa20Nonce() const { return _xSalsa20Nonce; }
-    Bytes ciphertextMAC() const { return _ciphertextMAC; }
+    const AuthMAC& headerMAC() const { return _headerMAC; }
+    const EncNonce& xSalsa20Nonce() const { return _xSalsa20Nonce; }
+    const EncMAC& ciphertextMAC() const { return _ciphertextMAC; }
     Bytes ciphertext() const { return _ciphertext; }
 
     static RawVault parse(Bytes data);

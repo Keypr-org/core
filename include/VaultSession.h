@@ -21,6 +21,9 @@
 #include <vector>
 
 class VaultSession : public DatedItem {
+    // Must be a friend class so it can set and retrieve the auth and enc keys
+    friend class VaultRepository;
+
   public:
     /**
      * Constructs a new VaultSession.
