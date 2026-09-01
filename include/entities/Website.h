@@ -4,13 +4,16 @@
 #include <nlohmann/json.hpp>
 #include <string>
 
+#define NO_PERSONA_ID -1
+
 class Website : public Entry {
     friend class Entry;
 
   public:
     explicit Website(std::string notes, std::string title, std::string username,
                      std::string password, std::string url, std::string comments = "",
-                     int64_t personaId = -1, std::string aliasId = "", std::string alias = "");
+                     int64_t personaId = NO_PERSONA_ID, std::string aliasId = "",
+                     std::string alias = "");
 
     const std::string& getTitle() const noexcept;
     void setTitle(std::string title);
