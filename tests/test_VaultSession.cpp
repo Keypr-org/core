@@ -116,6 +116,20 @@ class VaultSessionTest : public ::testing::Test {
         return std::make_unique<Website>(std::move(notes), std::move(title), "username", "password",
                                          std::move(url));
     }
+
+    std::unique_ptr<Wifi> makeWifi(std::string notes, std::string networkName,
+                                   std::string password) {
+        return std::make_unique<Wifi>(std::move(notes), std::move(networkName),
+                                      std::move(password));
+    }
+
+    std::unique_ptr<CreditCard> makeCreditCard(std::string notes, std::string cardHolderName,
+                                               std::string cardNumber, std::string expiration,
+                                               std::string securityCode) {
+        return std::make_unique<CreditCard>(std::move(notes), std::move(cardHolderName),
+                                            std::move(cardNumber), std::move(expiration),
+                                            std::move(securityCode));
+    }
 };
 
 // ------------- VaultSession tests --------------------
@@ -981,4 +995,87 @@ TEST_F(VaultSessionTest, ParseMissingRequiredFieldThrows) {
     const Bytes bytes{reinterpret_cast<const uint8_t*>(body.data()), body.size()};
 
     EXPECT_THROW(VaultSession::parse(bytes), ParseError);
+}
+
+// ------------ VaultSession serialization tests --------------------
+
+/*
+ * Tests that serializing a VaultSession to JSON and then parsing it back results in an equivalent
+ * VaultSession object.
+ */
+TEST_F(VaultSessionTest, SerializeAndParseRoundTrip) {
+    VaultSession originalSession("My Vault", makeEncKey(), makeAuthKey(), nullptr);
+    originalSession.addCategory(makeCategory("Passwords"));
+    originalSession.addPersona(makePersona("Ada", "Lovelace"));
+
+    const auto categoryId = originalSession.getCategories().front()->getId();
+    const auto personaId = originalSession.getPersonas().front()->getId();
+
+    originalSession.addEntryToCategory(
+        categoryId, makeWebsite("notes", "GitHub", "alice", "secret", "https://github.com"));
+    originalSession.addEntryToCategory(
+        categoryId, makeCreditCard("notes", "Alice Example", "4111111111111111", "12/30", "123"));
+    originalSession.addEntryToCategory(categoryId,
+                                       makeWifi("notes", "Home Wi-Fi", "wifi-password"));
+
+    const std::vector<uint8_t> serialized = VaultSession::serialize(originalSession);
+    VaultSession parsedSession = VaultSession::parse(serialized);
+
+    EXPECT_EQ(parsedSession.getName(), originalSession.getName());
+    EXPECT_EQ(toUnixMilliseconds(parsedSession.getCreationDate()),
+              toUnixMilliseconds(originalSession.getCreationDate()));
+    EXPECT_EQ(toUnixMilliseconds(parsedSession.getLastModifiedDate()),
+              toUnixMilliseconds(originalSession.getLastModifiedDate()));
+
+    ASSERT_EQ(parsedSession.getCategories().size(), 1U);
+    EXPECT_EQ(parsedSession.getCategories().front()->getId(),
+              originalSession.getCategories().front()->getId());
+    EXPECT_EQ(parsedSession.getCategories().front()->getName(),
+              originalSession.getCategories().front()->getName());
+
+    ASSERT_EQ(parsedSession.getPersonas().size(), 1U);
+    EXPECT_EQ(parsedSession.getPersonas().front()->getId(),
+              originalSession.getPersonas().front()->getId());
+    EXPECT_EQ(parsedSession.getPersonas().front()->getFirstName(),
+              originalSession.getPersonas().front()->getFirstName());
+    EXPECT_EQ(parsedSession.getPersonas().front()->getLastName(),
+              originalSession.getPersonas().front()->getLastName());
+
+    const auto& parsedEntries = parsedSession.getCategories().front()->getEntries();
+    const auto& originalEntries = originalSession.getCategories().front()->getEntries();
+
+    ASSERT_EQ(parsedEntries.size(), 3U);
+    ASSERT_EQ(originalEntries.size(), 3U);
+
+    for (size_t i = 0; i < parsedEntries.size(); ++i) {
+        EXPECT_EQ(parsedEntries[i]->getType(), originalEntries[i]->getType());
+        EXPECT_EQ(parsedEntries[i]->getNotes(), originalEntries[i]->getNotes());
+        EXPECT_EQ(parsedEntries[i]->getId(), originalEntries[i]->getId());
+        if (parsedEntries[i]->getType() == "Website") {
+            const auto* parsedWebsite = dynamic_cast<const Website*>(parsedEntries[i].get());
+            const auto* originalWebsite = dynamic_cast<const Website*>(originalEntries[i].get());
+            ASSERT_NE(parsedWebsite, nullptr);
+            ASSERT_NE(originalWebsite, nullptr);
+            EXPECT_EQ(parsedWebsite->getTitle(), originalWebsite->getTitle());
+            EXPECT_EQ(parsedWebsite->getUsername(), originalWebsite->getUsername());
+            EXPECT_EQ(parsedWebsite->getPassword(), originalWebsite->getPassword());
+            EXPECT_EQ(parsedWebsite->getUrl(), originalWebsite->getUrl());
+        } else if (parsedEntries[i]->getType() == "Wifi") {
+            const auto* parsedWifi = dynamic_cast<const Wifi*>(parsedEntries[i].get());
+            const auto* originalWifi = dynamic_cast<const Wifi*>(originalEntries[i].get());
+            ASSERT_NE(parsedWifi, nullptr);
+            ASSERT_NE(originalWifi, nullptr);
+            EXPECT_EQ(parsedWifi->getNetworkName(), originalWifi->getNetworkName());
+            EXPECT_EQ(parsedWifi->getPassword(), originalWifi->getPassword());
+        } else if (parsedEntries[i]->getType() == "CreditCard") {
+            const auto* parsedCard = dynamic_cast<const CreditCard*>(parsedEntries[i].get());
+            const auto* originalCard = dynamic_cast<const CreditCard*>(originalEntries[i].get());
+            ASSERT_NE(parsedCard, nullptr);
+            ASSERT_NE(originalCard, nullptr);
+            EXPECT_EQ(parsedCard->getCardHolderName(), originalCard->getCardHolderName());
+            EXPECT_EQ(parsedCard->getCardNumber(), originalCard->getCardNumber());
+            EXPECT_EQ(parsedCard->getExpiration(), originalCard->getExpiration());
+            EXPECT_EQ(parsedCard->getSecurityCode(), originalCard->getSecurityCode());
+        }
+    }
 }
