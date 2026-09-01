@@ -119,16 +119,16 @@ class VaultSessionTest : public ::testing::Test {
 
     std::unique_ptr<Wifi> makeWifi(std::string notes, std::string networkName,
                                    std::string password) {
-        return std::make_unique<Wifi>(std::move(notes), std::move(networkName),
-                                      std::move(password));
+        return std::make_unique<Wifi>(std::move(networkName), std::move(password),
+                                      std::move(notes));
     }
 
     std::unique_ptr<CreditCard> makeCreditCard(std::string notes, std::string cardHolderName,
                                                std::string cardNumber, std::string expiration,
                                                std::string securityCode) {
-        return std::make_unique<CreditCard>(std::move(notes), std::move(cardHolderName),
-                                            std::move(cardNumber), std::move(expiration),
-                                            std::move(securityCode));
+        return std::make_unique<CreditCard>(std::move(cardHolderName), std::move(cardNumber),
+                                            std::move(expiration), std::move(securityCode),
+                                            std::move(notes));
     }
 };
 
@@ -249,6 +249,101 @@ TEST_F(VaultSessionTest, AddEntryToMissingCategoryThrowsAndLeavesStateUnchanged)
     EXPECT_EQ(session.getCategories().front()->getName(), "Passwords");
     EXPECT_TRUE(session.getCategories().front()->getEntries().empty());
     EXPECT_EQ(session.getLastModifiedDate(), lastModifiedBefore);
+}
+
+/*
+ * Tests that getEntriesInCategory returns the entries of the requested category in insertion
+ * order and preserves their concrete types.
+ */
+TEST_F(VaultSessionTest, GetEntriesInCategoryReturnsEntriesInInsertionOrder) {
+    VaultSession session("My Vault", makeEncKey(), makeAuthKey(), nullptr);
+
+    session.addCategory(makeCategory("Passwords"));
+    const auto categoryId = session.getCategories().front()->getId();
+
+    auto website = makeWebsite("website notes", "GitHub", "alice", "secret", "https://github.com");
+    auto wifi = makeWifi("wifi notes", "Home Wi-Fi", "wifi-password");
+    auto card = makeCreditCard("card notes", "Alice Example", "4111111111111111", "12/30", "123");
+
+    const auto websiteId = website->getId();
+    const auto wifiId = wifi->getId();
+    const auto cardId = card->getId();
+
+    session.addEntryToCategory(categoryId, std::move(website));
+    session.addEntryToCategory(categoryId, std::move(wifi));
+    session.addEntryToCategory(categoryId, std::move(card));
+
+    const auto& entries = session.getEntriesInCategory(categoryId);
+
+    ASSERT_EQ(entries.size(), 3U);
+
+    const auto* firstWebsite = dynamic_cast<const Website*>(entries[0].get());
+    const auto* secondWifi = dynamic_cast<const Wifi*>(entries[1].get());
+    const auto* thirdCard = dynamic_cast<const CreditCard*>(entries[2].get());
+
+    ASSERT_NE(firstWebsite, nullptr);
+    ASSERT_NE(secondWifi, nullptr);
+    ASSERT_NE(thirdCard, nullptr);
+
+    EXPECT_EQ(firstWebsite->getId(), websiteId);
+    EXPECT_EQ(firstWebsite->getTitle(), "GitHub");
+    EXPECT_EQ(secondWifi->getId(), wifiId);
+    EXPECT_EQ(secondWifi->getNetworkName(), "Home Wi-Fi");
+    EXPECT_EQ(thirdCard->getId(), cardId);
+    EXPECT_EQ(thirdCard->getCardHolderName(), "Alice Example");
+}
+
+/*
+ * Tests that getEntriesInCategory only returns entries from the requested category.
+ */
+TEST_F(VaultSessionTest, GetEntriesInCategoryReturnsOnlyTargetCategoryEntries) {
+    VaultSession session("My Vault", makeEncKey(), makeAuthKey(), nullptr);
+
+    session.addCategory(makeCategory("Personal"));
+    session.addCategory(makeCategory("Work"));
+
+    const auto personalCategoryId = session.getCategories()[0]->getId();
+    const auto workCategoryId = session.getCategories()[1]->getId();
+
+    auto personalWebsite = makeWebsite("personal notes", "Personal", "alice", "secret",
+                                       "https://personal.example.com");
+    auto workWebsite =
+        makeWebsite("work notes", "Work", "bob", "secret", "https://work.example.com");
+
+    const auto personalWebsiteId = personalWebsite->getId();
+    const auto workWebsiteId = workWebsite->getId();
+
+    session.addEntryToCategory(personalCategoryId, std::move(personalWebsite));
+    session.addEntryToCategory(workCategoryId, std::move(workWebsite));
+
+    const auto& personalEntries = session.getEntriesInCategory(personalCategoryId);
+    const auto& workEntries = session.getEntriesInCategory(workCategoryId);
+
+    ASSERT_EQ(personalEntries.size(), 1U);
+    ASSERT_EQ(workEntries.size(), 1U);
+
+    const auto* personalEntry = dynamic_cast<const Website*>(personalEntries.front().get());
+    const auto* workEntry = dynamic_cast<const Website*>(workEntries.front().get());
+
+    ASSERT_NE(personalEntry, nullptr);
+    ASSERT_NE(workEntry, nullptr);
+
+    EXPECT_EQ(personalEntry->getId(), personalWebsiteId);
+    EXPECT_EQ(personalEntry->getUrl(), "https://personal.example.com");
+    EXPECT_EQ(workEntry->getId(), workWebsiteId);
+    EXPECT_EQ(workEntry->getUrl(), "https://work.example.com");
+}
+
+/*
+ * Tests that getEntriesInCategory throws when the category does not exist.
+ */
+TEST_F(VaultSessionTest, GetEntriesInCategoryThrowsWhenCategoryDoesNotExist) {
+    VaultSession session("My Vault", makeEncKey(), makeAuthKey(), nullptr);
+
+    session.addCategory(makeCategory("Passwords"));
+    const auto missingCategoryId = session.getCategories().front()->getId() + 1;
+
+    EXPECT_THROW(session.getEntriesInCategory(missingCategoryId), CategoryNotFoundError);
 }
 
 /*
