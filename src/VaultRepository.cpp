@@ -4,7 +4,6 @@
 #include "RawVault.h"
 #include "Types.h"
 
-#include <cctype>
 #include <sodium.h>
 
 // The derived key length is the sum of the encryption key size and the authentication key size
@@ -112,27 +111,33 @@ std::unique_ptr<VaultSession> VaultRepository::createVault(const std::string& ma
 }
 
 bool VaultRepository::lockVault(const VaultSession& session, std::string filename) {
-    // If filename empty then derive it from the vault name
-    if (filename == "") {
-        std::string derivedName = session.getName();
-        std::replace_if(
-            derivedName.begin(), derivedName.end(), [](char c) { return !std::isalnum(c); }, '_');
-        std::transform(derivedName.begin(), derivedName.end(), derivedName.begin(),
-                       [](char c) { return std::tolower(c); });
-        derivedName += ".kvdb";
-        return lockVault(session, derivedName);
+    try { // Serialize session to JSON
+        std::vector<uint8_t> vaultBodyPlaintext = VaultSession::serialize(session);
+
+        // Authenticate header
+        std::array<uint8_t, VAULT_HEADER_BYTES> headerBytes =
+            VaultHeader::serialize(*session.header);
+        AuthMAC headerMAC = CryptoService::authenticate(session.authKey, headerBytes);
+
+        // Generate random Nonce
+        std::array<uint8_t, XSALSA20_NONCE_BYTES> xSalsa20Nonce;
+        randombytes_buf(xSalsa20Nonce.data(), xSalsa20Nonce.size());
+
+        // Encrypt vault body
+        auto [ciphertextMAC, ciphertext] =
+            CryptoService::encrypt(session.encKey, xSalsa20Nonce, vaultBodyPlaintext);
+
+        // Create RawVault
+        RawVault rawVault(*session.header, headerMAC, xSalsa20Nonce, ciphertextMAC, ciphertext);
+
+        // Serialize RawVault to bytes
+        std::vector<uint8_t> rawVaultBytes = RawVault::serialize(rawVault);
+
+        FileHandler::saveFileAtomically(filename, rawVaultBytes);
+
+        return true;
+
+    } catch (std::runtime_error& e) {
+        return false;
     }
-
-    // Serialize session to JSON
-    std::vector<uint8_t> vaultBodyPlaintext = VaultSession::serialize(session);
-
-    // Authenticate header
-    std::array<uint8_t, VAULT_HEADER_BYTES> headerBytes = VaultHeader::serialize(*session.header);
-    AuthMAC headerMAC = CryptoService::authenticate(session.authKey, headerBytes);
-
-    // Generate random Nonce
-    std::array<uint8_t, XSALSA20_NONCE_BYTES> xSalsa20Nonce;
-    randombytes_buf(xSalsa20Nonce.data(), xSalsa20Nonce.size());
-
-    // Encrypt vault body
 }

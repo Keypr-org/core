@@ -121,7 +121,7 @@ TEST_F(VaultHeaderTest, Argon2MemLimitTooLargeThrows) {
 TEST_F(VaultHeaderTest, SerializeAndDeserialize) {
     EXPECT_NO_THROW({
         VaultHeader originalHeader = VaultHeader::parse(testData);
-        std::vector<uint8_t> serializedData = VaultHeader::serialize(originalHeader);
+        auto serializedData = VaultHeader::serialize(originalHeader);
         EXPECT_EQ(serializedData.size(), VAULT_HEADER_BYTES);
         VaultHeader deserializedHeader = VaultHeader::parse(serializedData);
         EXPECT_EQ(deserializedHeader.formatVersion(), originalHeader.formatVersion());

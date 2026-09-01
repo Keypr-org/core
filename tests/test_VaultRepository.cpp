@@ -249,19 +249,6 @@ TEST_F(VaultRepositoryTest, lockVaultSavesVaultSessionToGivenFilenameAndReturnsT
 }
 
 /*
- * lockVault saves the vault session to a filename derived from the vault name if no filename is
- * provided and returns true
- */
-TEST_F(VaultRepositoryTest, lockVaultSavesVaultSessionToDerivedFilenameAndReturnsTrue) {
-    VaultRepository repo;
-    auto session = repo.createVault(masterpass, "New Vault");
-    const auto expectedFilename = path("new_vault.kvdb").string();
-
-    EXPECT_TRUE(repo.lockVault(*session));
-    EXPECT_TRUE(repo.vaultExists(expectedFilename));
-}
-
-/*
  * lockVault returns false if saving the vault session fails (e.g., due to insufficient
  * permissions)
  */
