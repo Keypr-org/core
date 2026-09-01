@@ -417,6 +417,128 @@ TEST_F(VaultSessionTest, LinkPersonaToEntryThrowsWhenEntryIsCreditCard) {
     EXPECT_EQ(storedWebsite->getPersonaId(), NO_PERSONA_ID);
 }
 
+/*
+ * Tests that setting an alias on a website updates the alias fields and the website modified date,
+ * while leaving unrelated entries unchanged.
+ */
+TEST_F(VaultSessionTest, SetAliasForWebsiteUpdatesAliasAndWebsiteTimestamp) {
+    VaultSession session("My Vault", makeEncKey(), makeAuthKey(), nullptr);
+
+    session.addCategory(makeCategory("Passwords"));
+    session.addCategory(makeCategory("Misc"));
+
+    const auto passwordsCategoryId = session.getCategories()[0]->getId();
+    const auto miscCategoryId = session.getCategories()[1]->getId();
+
+    auto website = makeWebsite("notes", "GitHub", "alice", "secret", "https://github.com");
+    auto wifi = makeWifi("wifi notes", "Home Wi-Fi", "wifi-password");
+    auto card = makeCreditCard("Alice Example", "4111111111111111", "12/30", "123", "card notes");
+
+    const auto websiteId = website->getId();
+    const auto wifiId = wifi->getId();
+    const auto cardId = card->getId();
+
+    session.addEntryToCategory(passwordsCategoryId, std::move(website));
+    session.addEntryToCategory(miscCategoryId, std::move(wifi));
+    session.addEntryToCategory(miscCategoryId, std::move(card));
+
+    const auto websiteLastModifiedBefore = session.getWebsiteById(websiteId)->getLastModifiedDate();
+    const auto wifiLastModifiedBefore =
+        dynamic_cast<const Wifi*>(session.getCategories()[1]->getEntries()[0].get())
+            ->getLastModifiedDate();
+    const auto cardLastModifiedBefore =
+        dynamic_cast<const CreditCard*>(session.getCategories()[1]->getEntries()[1].get())
+            ->getLastModifiedDate();
+    const auto sessionLastModifiedBefore = session.getLastModifiedDate();
+
+    session.setAliasForWebsite(passwordsCategoryId, websiteId, "example-alias-id", "Example alias");
+
+    const auto* updatedWebsite = session.getWebsiteById(websiteId);
+    ASSERT_NE(updatedWebsite, nullptr);
+    EXPECT_EQ(updatedWebsite->getAliasId(), "example-alias-id");
+    EXPECT_EQ(updatedWebsite->getAlias(), "Example alias");
+    EXPECT_NE(updatedWebsite->getLastModifiedDate(), websiteLastModifiedBefore);
+    EXPECT_GE(session.getLastModifiedDate(), sessionLastModifiedBefore);
+
+    EXPECT_EQ(dynamic_cast<const Wifi*>(session.getCategories()[1]->getEntries()[0].get())
+                  ->getLastModifiedDate(),
+              wifiLastModifiedBefore);
+    EXPECT_EQ(dynamic_cast<const CreditCard*>(session.getCategories()[1]->getEntries()[1].get())
+                  ->getLastModifiedDate(),
+              cardLastModifiedBefore);
+    EXPECT_EQ(session.getCategories()[1]->getEntries()[0]->getId(), wifiId);
+    EXPECT_EQ(session.getCategories()[1]->getEntries()[1]->getId(), cardId);
+}
+
+/*
+ * Tests that setting an alias on a missing category throws and leaves the website unchanged.
+ */
+TEST_F(VaultSessionTest, SetAliasForWebsiteThrowsWhenCategoryDoesNotExist) {
+    VaultSession session("My Vault", makeEncKey(), makeAuthKey(), nullptr);
+
+    session.addCategory(makeCategory("Passwords"));
+    const auto categoryId = session.getCategories().front()->getId();
+
+    auto website = makeWebsite("notes", "GitHub", "alice", "secret", "https://github.com");
+    const auto websiteId = website->getId();
+    session.addEntryToCategory(categoryId, std::move(website));
+
+    EXPECT_THROW(session.setAliasForWebsite(categoryId + 1, websiteId, "alias-id", "Alias"),
+                 CategoryNotFoundError);
+
+    const auto* storedWebsite = session.getWebsiteById(websiteId);
+    ASSERT_NE(storedWebsite, nullptr);
+    EXPECT_EQ(storedWebsite->getAliasId(), "");
+    EXPECT_EQ(storedWebsite->getAlias(), "");
+}
+
+/*
+ * Tests that setting an alias on a missing entry throws and leaves the category unchanged.
+ */
+TEST_F(VaultSessionTest, SetAliasForWebsiteThrowsWhenEntryDoesNotExist) {
+    VaultSession session("My Vault", makeEncKey(), makeAuthKey(), nullptr);
+
+    session.addCategory(makeCategory("Passwords"));
+    const auto categoryId = session.getCategories().front()->getId();
+
+    auto website = makeWebsite("notes", "GitHub", "alice", "secret", "https://github.com");
+    const auto websiteId = website->getId();
+    session.addEntryToCategory(categoryId, std::move(website));
+
+    EXPECT_THROW(session.setAliasForWebsite(categoryId, websiteId + 1, "alias-id", "Alias"),
+                 EntryNotFoundError);
+
+    const auto* storedWebsite = session.getWebsiteById(websiteId);
+    ASSERT_NE(storedWebsite, nullptr);
+    EXPECT_EQ(storedWebsite->getAliasId(), "");
+    EXPECT_EQ(storedWebsite->getAlias(), "");
+}
+
+/*
+ * Tests that setting an alias on a non-website entry throws and leaves the entry unchanged.
+ */
+TEST_F(VaultSessionTest, SetAliasForWebsiteThrowsWhenEntryHasWrongType) {
+    VaultSession session("My Vault", makeEncKey(), makeAuthKey(), nullptr);
+
+    session.addCategory(makeCategory("Passwords"));
+    const auto categoryId = session.getCategories().front()->getId();
+
+    auto website = makeWebsite("notes", "GitHub", "alice", "secret", "https://github.com");
+    auto wifi = std::make_unique<Wifi>("wifi notes", "Home Wi-Fi", "wifi-password");
+    const auto websiteId = website->getId();
+    const auto wifiId = wifi->getId();
+    session.addEntryToCategory(categoryId, std::move(website));
+    session.addEntryToCategory(categoryId, std::move(wifi));
+
+    EXPECT_THROW(session.setAliasForWebsite(categoryId, wifiId, "alias-id", "Alias"),
+                 EntryNotGoodTypeError);
+
+    const auto* storedWebsite = session.getWebsiteById(websiteId);
+    ASSERT_NE(storedWebsite, nullptr);
+    EXPECT_EQ(storedWebsite->getAliasId(), "");
+    EXPECT_EQ(storedWebsite->getAlias(), "");
+}
+
 /**
  * Test that getWebsiteById returns the matching website when the ID exists.
  */

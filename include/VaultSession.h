@@ -118,6 +118,20 @@ class VaultSession : public DatedItem {
     const Website* getWebsiteById(int64_t entryId) const;
 
     /**
+     * Sets the alias for a website entry in the VaultSession.
+     * @param categoryId The ID of the category containing the website entry.
+     * @param entryId The ID of the website entry to set the alias for.
+     * @param aliasId The alias ID to set for the website entry.
+     * @param alias The alias to set for the website entry.
+     * @throws CategoryNotFoundError if the category with the specified ID does not exist.
+     * @throws EntryNotFoundError if the entry with the specified ID does not exist in the category.
+     * @throws EntryNotGoodTypeError if the entry is not a Website entry and cannot have an alias
+     * set.
+     */
+    void setAliasForWebsite(int64_t categoryId, int64_t entryId, const std::string& aliasId,
+                            const std::string& alias);
+
+    /**
      * Removes an entry from a category in the VaultSession.
      * @param categoryId The ID of the category from which to remove the entry.
      * @param entryId The ID of the entry to remove.
