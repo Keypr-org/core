@@ -3,7 +3,6 @@
 #include "Item.h"
 #include "Types.h"
 #include <memory>
-#include <optional>
 #include <nlohmann/json.hpp>
 #include <string>
 #include <vector>
