@@ -87,6 +87,7 @@ void to_json(json& j, const Website& website) {
     j["username"] = website.username;
     j["password"] = website.password;
     j["url"] = website.url;
+    j["aliasId"] = website.aliasId;
     j["alias"] = website.alias;
     j["personaId"] = website.personaId;
 }
@@ -99,6 +100,7 @@ void from_json(const json& j, Website& website) {
     j.at("username").get_to(website.username);
     j.at("password").get_to(website.password);
     j.at("url").get_to(website.url);
+    j.at("aliasId").get_to(website.aliasId);
     j.at("alias").get_to(website.alias);
     j.at("personaId").get_to(website.personaId);
 }

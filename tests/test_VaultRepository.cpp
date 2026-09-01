@@ -44,6 +44,7 @@ class VaultRepositoryTest : public ::testing::Test {
                         {"username", "alice"},
                         {"password", "website-password"},
                         {"url", "https://example.com"},
+                        {"aliasId", "example-alias-id"},
                         {"alias", "Example alias"},
                         {"personaId", 4000}};
 
