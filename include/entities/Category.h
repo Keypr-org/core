@@ -8,13 +8,13 @@
 #include <vector>
 
 class Category : public Item {
-public:
+  public:
     explicit Category(std::string name);
     Category() = default;
 
-    const std::string &getName() const noexcept;
+    const std::string& getName() const noexcept;
 
-    const std::vector<std::unique_ptr<Entry>> &getEntries() const;
+    const std::vector<std::unique_ptr<Entry>>& getEntries() const;
 
     /**
      * Adds an entry to the category.
@@ -34,14 +34,14 @@ public:
      * @param entryId The ID of the entry to find.
      * @return A reference to the found entry or a null pointer if not found.
      */
-    Entry *findEntryById(int64_t entryId);
+    Entry* findEntryById(int64_t entryId);
 
     std::string getType() const override { return "Category"; }
 
-    friend void to_json(json &j, const Category &category);
-    friend void from_json(const json &j, Category &category);
+    friend void to_json(json& j, const Category& category);
+    friend void from_json(const json& j, Category& category);
 
-private:
+  private:
     std::string name;
     std::vector<std::unique_ptr<Entry>> entries;
 };
