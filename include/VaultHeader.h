@@ -29,9 +29,31 @@ class VaultHeader {
     const uint64_t _argon2OpLimit;
     const uint64_t _argon2MemLimit;
 
-
+    /*
+     * @brief Reads a 32-bit unsigned integer from a byte span in little-endian order.
+     *
+     * @param data A span of bytes from which to read the integer. Must be at least 4 bytes long.
+     *
+     * @return The 32-bit unsigned integer read from the byte span.
+     *
+     * @throws VaultHeaderParsingError if the provided data span is smaller than 4 bytes.
+     */
     static uint32_t read_u32_le(Bytes data);
+
+    /*
+     * @brief Reads a 64-bit unsigned integer from a byte span in little-endian order.
+     *
+     * @param data A span of bytes from which to read the integer. Must be at least 8 bytes long.
+     *
+     * @return The 64-bit unsigned integer read from the byte span.
+     *
+     * @throws VaultHeaderParsingError if the provided data span is smaller than 8 bytes.
+     */
     static uint64_t read_u64_le(Bytes data);
+
+    static void write_u32_le(uint32_t value, MutableBytes data);
+
+    static void write_u64_le(uint64_t value, MutableBytes data);
 
   public:
     VaultHeader(std::array<uint8_t, MAGIC_BYTES_SIZE> magicBytes, uint32_t formatVersion,
@@ -46,7 +68,29 @@ class VaultHeader {
     uint64_t argon2OpLimit() const { return _argon2OpLimit; }
     uint64_t argon2MemLimit() const { return _argon2MemLimit; }
 
+    /*
+     * @brief Parses a byte span into a VaultHeader object.
+     *
+     * @param data A span of bytes representing the vault header. Must be at least
+     * VAULT_HEADER_BYTES long.
+     *
+     * @return A VaultHeader object constructed from the provided byte span.
+     *
+     * @throws VaultHeaderParsingError if the provided data is too small, has invalid magic bytes,
+     *         or contains unsupported format version or invalid Argon2 parameters.
+     */
     static VaultHeader parse(Bytes data);
+
+    /*
+     * @brief Serializes a VaultHeader object into a byte vector.
+     *
+     * @param header The VaultHeader object to serialize.
+     *
+     * @return A vector of bytes representing the serialized VaultHeader.
+     *
+     * @throws VaultHeaderSerializeError if serialization fails for any reason.
+     */
+    static std::vector<uint8_t> serialize(const VaultHeader& header);
 };
 
 // Custom exceptions
@@ -56,6 +100,11 @@ class VaultHeaderError : public std::runtime_error {
 };
 
 class VaultHeaderParsingError : public VaultHeaderError {
+  public:
+    using VaultHeaderError::VaultHeaderError;
+};
+
+class VaultHeaderSerializeError : public VaultHeaderError {
   public:
     using VaultHeaderError::VaultHeaderError;
 };

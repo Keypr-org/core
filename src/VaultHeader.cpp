@@ -1,17 +1,6 @@
 #include "VaultHeader.h"
 #include <sodium.h>
 
-/*
- * @brief Parses a byte span into a VaultHeader object.
- *
- * @param data A span of bytes representing the vault header. Must be at least VAULT_HEADER_BYTES
- * long.
- *
- * @return A VaultHeader object constructed from the provided byte span.
- *
- * @throws VaultHeaderParsingError if the provided data is too small, has invalid magic bytes,
- *         or contains unsupported format version or invalid Argon2 parameters.
- */
 VaultHeader VaultHeader::parse(Bytes data) {
     if (data.size() < VAULT_HEADER_BYTES) {
         throw VaultHeaderParsingError("Data too small to contain a header");
@@ -47,15 +36,6 @@ VaultHeader VaultHeader::parse(Bytes data) {
     return VaultHeader(magicBytes, formatVersion, argon2Salt, argon2OpLimit, argon2MemLimit);
 }
 
-/*
- * @brief Reads a 32-bit unsigned integer from a byte span in little-endian order.
- *
- * @param data A span of bytes from which to read the integer. Must be at least 4 bytes long.
- *
- * @return The 32-bit unsigned integer read from the byte span.
- *
- * @throws VaultHeaderParsingError if the provided data span is smaller than 4 bytes.
- */
 uint32_t VaultHeader::read_u32_le(Bytes data) {
     if (data.size() < sizeof(uint32_t)) {
         throw VaultHeaderParsingError("Not enough data to read uint32_t");
@@ -67,18 +47,7 @@ uint32_t VaultHeader::read_u32_le(Bytes data) {
     return value;
 }
 
-/*
- * @brief Reads a 64-bit unsigned integer from a byte span in little-endian order.
- *
- * @param data A span of bytes from which to read the integer. Must be at least 8 bytes long.
- *
- * @return The 64-bit unsigned integer read from the byte span.
- *
- * @throws VaultHeaderParsingError if the provided data span is smaller than 8 bytes.
- */
 uint64_t VaultHeader::read_u64_le(Bytes data) {
-    // TODO: Implement this !
-    // data is a std::span<const uint8_t>
     if (data.size() < sizeof(uint64_t)) {
         throw VaultHeaderParsingError("Not enough data to read uint64_t");
     }
@@ -87,4 +56,40 @@ uint64_t VaultHeader::read_u64_le(Bytes data) {
         value |= static_cast<uint64_t>(data[i]) << (8 * i);
     }
     return value;
+}
+
+void VaultHeader::write_u32_le(uint32_t value, MutableBytes data) {
+    if (data.size() < sizeof(uint32_t)) {
+        throw VaultHeaderSerializeError("Not enough space to write uint32_t");
+    }
+    for (size_t i = 0; i < sizeof(uint32_t); ++i) {
+        data[i] = static_cast<uint8_t>((value >> (8 * i)) & 0xFF);
+    }
+}
+
+void VaultHeader::write_u64_le(uint64_t value, MutableBytes data) {
+    if (data.size() < sizeof(uint64_t)) {
+        throw VaultHeaderSerializeError("Not enough space to write uint64_t");
+    }
+    for (size_t i = 0; i < sizeof(uint64_t); ++i) {
+        data[i] = static_cast<uint8_t>((value >> (8 * i)) & 0xFF);
+    }
+}
+
+std::vector<uint8_t> VaultHeader::serialize(const VaultHeader& header) {
+    std::vector<uint8_t> out(VAULT_HEADER_BYTES);
+
+    std::copy(header.magicBytes().begin(), header.magicBytes().end(),
+              out.begin() + MAGIC_BYTES_OFFSET);
+
+    write_u32_le(header.formatVersion(), {out.begin() + FORMAT_VERSION_OFFSET, sizeof(uint32_t)});
+
+    std::copy(header.argon2Salt().begin(), header.argon2Salt().end(),
+              out.begin() + ARGON2_SALT_OFFSET);
+
+    write_u64_le(header.argon2OpLimit(), {out.begin() + ARGON2_OPSLIMIT_OFFSET, sizeof(uint64_t)});
+
+    write_u64_le(header.argon2MemLimit(), {out.begin() + ARGON2_MEMLIMIT_OFFSET, sizeof(uint64_t)});
+
+    return out;
 }

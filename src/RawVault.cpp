@@ -37,3 +37,37 @@ RawVault RawVault::parse(Bytes data) {
 
     return RawVault(header, headerMAC, xSalsa20Nonce, ciphertextMAC, ciphertext);
 }
+
+std::vector<uint8_t> RawVault::serialize(const RawVault& vault) {
+    std::vector<uint8_t> serializedData(RAW_VAULT_BYTES + vault.ciphertext().size());
+
+    // Serialize header
+    std::vector<uint8_t> headerData = [vault]() {
+        try {
+            return VaultHeader::serialize(vault.header());
+        } catch (const VaultHeaderSerializeError& e) {
+            throw RawVaultSerializeError("Failed to serialize vault header: " +
+                                         std::string(e.what()));
+        }
+    }();
+
+    std::copy(headerData.begin(), headerData.end(), serializedData.begin() + HEADER_OFFSET);
+
+    // Serialize header MAC
+    std::copy(vault.headerMAC().begin(), vault.headerMAC().end(),
+              serializedData.begin() + HEADER_MAC_OFFSET);
+
+    // Serialize XSalsa20 nonce
+    std::copy(vault.xSalsa20Nonce().begin(), vault.xSalsa20Nonce().end(),
+              serializedData.begin() + XSALSA20_NONCE_OFFSET);
+
+    // Serialize ciphertext MAC
+    std::copy(vault.ciphertextMAC().begin(), vault.ciphertextMAC().end(),
+              serializedData.begin() + CIPHERTEXT_MAC_OFFSET);
+
+    // Serialize ciphertext
+    std::copy(vault.ciphertext().begin(), vault.ciphertext().end(),
+              serializedData.begin() + CIPHERTEXT_OFFSET);
+
+    return serializedData;
+}
