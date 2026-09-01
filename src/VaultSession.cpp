@@ -197,3 +197,16 @@ std::vector<const Website*> VaultSession::getWebsiteByUrl(const std::string& url
 
     return matchingWebsites;
 }
+
+std::vector<uint8_t> VaultSession::serialize(const VaultSession& session) {
+    try {
+        json j;
+        to_json(j, session);
+
+        const std::string body = j.dump();
+
+        return std::vector<uint8_t>(body.begin(), body.end());
+    } catch (const json::exception& e) {
+        throw SerializeError("Failed to serialize VaultSession to JSON: " + std::string(e.what()));
+    }
+}

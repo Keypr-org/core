@@ -128,6 +128,17 @@ class VaultSession : public DatedItem {
      */
     static VaultSession parse(Bytes vaultBody);
 
+    /*
+     * @brief Serializes a VaultSession to a vector of bytes.
+     *
+     * @param session The VaultSession to serialize.
+     *
+     * @return A vector of bytes representing the serialized VaultSession.
+     *
+     * @throws SerializeError if serialization fails.
+     */
+    static std::vector<uint8_t> serialize(const VaultSession& session);
+
     friend void to_json(json& j, const VaultSession& vaultSession);
     friend void from_json(const json& j, VaultSession& vaultSession);
 
@@ -172,6 +183,11 @@ class CategoryNotFoundError : public VaultSessionError {
 };
 
 class ParseError : public VaultSessionError {
+  public:
+    using VaultSessionError::VaultSessionError;
+};
+
+class SerializeError : public VaultSessionError {
   public:
     using VaultSessionError::VaultSessionError;
 };
