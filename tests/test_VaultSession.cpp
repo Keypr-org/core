@@ -278,7 +278,7 @@ TEST_F(VaultSessionTest, LinkPersonaToEntryLinksMatchingWebsiteOnly) {
     EXPECT_EQ(linkedWebsite->getId(), targetWebsiteId);
     EXPECT_EQ(linkedWebsite->getPersonaId(), personaId);
     EXPECT_EQ(unlinkedWebsite->getId(), otherWebsiteId);
-    EXPECT_EQ(unlinkedWebsite->getPersonaId(), -1);
+    EXPECT_EQ(unlinkedWebsite->getPersonaId(), NO_PERSONA_ID);
     EXPECT_EQ(storedWifi->getId(), wifiId);
 }
 
@@ -299,7 +299,7 @@ TEST_F(VaultSessionTest, LinkPersonaToEntryThrowsWhenPersonaDoesNotExist) {
 
     const auto* storedWebsite = session.getWebsiteById(websiteId);
     ASSERT_NE(storedWebsite, nullptr);
-    EXPECT_EQ(storedWebsite->getPersonaId(), -1);
+    EXPECT_EQ(storedWebsite->getPersonaId(), NO_PERSONA_ID);
 }
 
 /*
@@ -322,7 +322,7 @@ TEST_F(VaultSessionTest, LinkPersonaToEntryThrowsWhenCategoryDoesNotExist) {
 
     const auto* storedWebsite = session.getWebsiteById(websiteId);
     ASSERT_NE(storedWebsite, nullptr);
-    EXPECT_EQ(storedWebsite->getPersonaId(), -1);
+    EXPECT_EQ(storedWebsite->getPersonaId(), NO_PERSONA_ID);
 }
 
 /*
@@ -346,7 +346,7 @@ TEST_F(VaultSessionTest, LinkPersonaToEntryThrowsWhenEntryDoesNotExist) {
 
     const auto* storedWebsite = session.getWebsiteById(websiteId);
     ASSERT_NE(storedWebsite, nullptr);
-    EXPECT_EQ(storedWebsite->getPersonaId(), -1);
+    EXPECT_EQ(storedWebsite->getPersonaId(), NO_PERSONA_ID);
 }
 
 /*
@@ -372,7 +372,7 @@ TEST_F(VaultSessionTest, LinkPersonaToEntryThrowsWhenEntryHasWrongType) {
 
     const auto* storedWebsite = session.getWebsiteById(websiteId);
     ASSERT_NE(storedWebsite, nullptr);
-    EXPECT_EQ(storedWebsite->getPersonaId(), -1);
+    EXPECT_EQ(storedWebsite->getPersonaId(), NO_PERSONA_ID);
 }
 
 /*
@@ -400,7 +400,7 @@ TEST_F(VaultSessionTest, LinkPersonaToEntryThrowsWhenEntryIsCreditCard) {
 
     const auto* storedWebsite = session.getWebsiteById(websiteId);
     ASSERT_NE(storedWebsite, nullptr);
-    EXPECT_EQ(storedWebsite->getPersonaId(), -1);
+    EXPECT_EQ(storedWebsite->getPersonaId(), NO_PERSONA_ID);
 }
 
 /**
@@ -706,8 +706,8 @@ TEST_F(VaultSessionTest, RemovePersonaRemovesAndUnlinksAssociatedWebsites) {
     ASSERT_NE(unlinkedAdaWork, nullptr);
     ASSERT_NE(stillLinkedGracePassword, nullptr);
 
-    EXPECT_EQ(unlinkedAdaPassword->getPersonaId(), -1);
-    EXPECT_EQ(unlinkedAdaWork->getPersonaId(), -1);
+    EXPECT_EQ(unlinkedAdaPassword->getPersonaId(), NO_PERSONA_ID);
+    EXPECT_EQ(unlinkedAdaWork->getPersonaId(), NO_PERSONA_ID);
     EXPECT_EQ(stillLinkedGracePassword->getPersonaId(), graceId);
     EXPECT_NE(unlinkedAdaPassword->getLastModifiedDate(), adaPasswordLastModifiedBefore);
     EXPECT_NE(unlinkedAdaWork->getLastModifiedDate(), adaWorkLastModifiedBefore);
