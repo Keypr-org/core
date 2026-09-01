@@ -57,7 +57,7 @@ class VaultRepository {
      *
      * @return true if the vault was successfully locked and written to disk, false otherwise.
      */
-    virtual bool lockVault(const VaultSession& session, std::string filename);
+    virtual bool lockVault(const VaultSession& session, const std::string& filename) const;
 };
 
 // ----------  Vault repository exceptions ---------------
