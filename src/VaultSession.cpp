@@ -52,6 +52,37 @@ void VaultSession::removePersona(int64_t personaId) {
     setLastModifiedDate(std::chrono::system_clock::now());
 }
 
+void VaultSession::linkPersonaToEntry(int64_t personaId, int64_t categoryId, int64_t entryId) {
+    getPersonaById(personaId); // Check if persona exists, throws PersonaNotFoundError if not
+
+    std::unique_ptr<Category>& category = findCategoryById(categoryId);
+    auto entry = category->findEntryById(entryId);
+    if (entry == nullptr) {
+        throw EntryNotFoundError("Entry with ID " + std::to_string(entryId) +
+                                 " not found in category with ID " + std::to_string(categoryId) +
+                                 ".");
+    }
+    if (auto websiteEntry = dynamic_cast<Website*>(entry)) {
+        websiteEntry->setPersona(personaId);
+    } else {
+        throw EntryNotGoodTypeError("Entry with ID " + std::to_string(entryId) +
+                                    " is not a Website entry and cannot be linked to a persona.");
+    }
+}
+
+const std::unique_ptr<Persona>& VaultSession::getPersonaById(int64_t personaId) const {
+    auto it = std::find_if(personas.begin(), personas.end(),
+                           [personaId](const std::unique_ptr<Persona>& persona) {
+                               return persona->getId() == personaId;
+                           });
+
+    if (it != personas.end()) {
+        return *it;
+    } else {
+        throw PersonaNotFoundError("Persona with ID " + std::to_string(personaId) + " not found.");
+    }
+}
+
 void VaultSession::addEntryToCategory(int64_t categoryId, std::unique_ptr<Entry> entry) {
 
     std::unique_ptr<Category>& category = findCategoryById(categoryId);

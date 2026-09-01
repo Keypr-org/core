@@ -72,6 +72,22 @@ class VaultSession : public DatedItem {
     void removePersona(int64_t personaId);
 
     /**
+     * Links a persona to an entry in the VaultSession.
+     * @param personaId The ID of the persona to link.
+     * @param categoryId The ID of the category containing the entry to link the persona to.
+     * @param entryId The ID of the entry to link the persona to.
+     */
+    void linkPersonaToEntry(int64_t personaId, int64_t categoryId, int64_t entryId);
+
+    /**
+     * Returns a persona by its ID.
+     * @param personaId The ID of the persona to find.
+     * @return A reference to the found persona.
+     * @throws PersonaNotFoundError if the persona with the specified ID does not exist.
+     */
+    const std::unique_ptr<Persona>& getPersonaById(int64_t personaId) const;
+
+    /**
      * Adds an entry to a category in the VaultSession.
      * @param categoryId The ID of the category to add the entry to.
      * @param entry The entry to add.
@@ -171,12 +187,22 @@ class CategoryNotFoundError : public VaultSessionError {
     using VaultSessionError::VaultSessionError;
 };
 
+class PersonaNotFoundError : public VaultSessionError {
+  public:
+    using VaultSessionError::VaultSessionError;
+};
+
 class ParseError : public VaultSessionError {
   public:
     using VaultSessionError::VaultSessionError;
 };
 
 class EntryNotFoundError : public VaultSessionError {
+  public:
+    using VaultSessionError::VaultSessionError;
+};
+
+class EntryNotGoodTypeError : public VaultSessionError {
   public:
     using VaultSessionError::VaultSessionError;
 };

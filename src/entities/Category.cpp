@@ -25,6 +25,17 @@ bool Category::removeEntry(int64_t entryId) {
     return false;
 }
 
+Entry* Category::findEntryById(int64_t entryId) {
+    auto it = std::find_if(
+        entries.begin(), entries.end(),
+        [entryId](const std::unique_ptr<Entry>& entry) { return entry->getId() == entryId; });
+    if (it != entries.end()) {
+        return it->get();
+    } else {
+        return nullptr;
+    }
+}
+
 void to_json(json& j, const Category& category) {
     category.serializeItem(j);
 

@@ -236,6 +236,172 @@ TEST_F(VaultSessionTest, AddEntryToMissingCategoryThrowsAndLeavesStateUnchanged)
     EXPECT_EQ(session.getLastModifiedDate(), lastModifiedBefore);
 }
 
+/*
+ * Tests that linking a persona to a website updates the website persona ID and leaves other
+ * entries untouched.
+ */
+TEST_F(VaultSessionTest, LinkPersonaToEntryLinksMatchingWebsiteOnly) {
+    VaultSession session("My Vault", makeEncKey(), makeAuthKey(), nullptr);
+
+    session.addPersona(makePersona("Ada", "Lovelace"));
+    const auto personaId = session.getPersonas().front()->getId();
+
+    session.addCategory(makeCategory("Passwords"));
+    const auto categoryId = session.getCategories().front()->getId();
+
+    auto targetWebsite =
+        makeWebsite("target notes", "Target", "alice", "secret", "https://target.example.com");
+    auto otherWebsite =
+        makeWebsite("other notes", "Other", "bob", "secret", "https://other.example.com");
+    auto wifi = std::make_unique<Wifi>("wifi notes", "Home Wi-Fi", "wifi-password");
+
+    const auto targetWebsiteId = targetWebsite->getId();
+    const auto otherWebsiteId = otherWebsite->getId();
+    const auto wifiId = wifi->getId();
+
+    session.addEntryToCategory(categoryId, std::move(targetWebsite));
+    session.addEntryToCategory(categoryId, std::move(otherWebsite));
+    session.addEntryToCategory(categoryId, std::move(wifi));
+
+    session.linkPersonaToEntry(personaId, categoryId, targetWebsiteId);
+
+    const auto& entries = session.getCategories().front()->getEntries();
+    const auto* linkedWebsite = dynamic_cast<const Website*>(entries[0].get());
+    const auto* unlinkedWebsite = dynamic_cast<const Website*>(entries[1].get());
+    const auto* storedWifi = dynamic_cast<const Wifi*>(entries[2].get());
+
+    ASSERT_NE(linkedWebsite, nullptr);
+    ASSERT_NE(unlinkedWebsite, nullptr);
+    ASSERT_NE(storedWifi, nullptr);
+
+    EXPECT_EQ(linkedWebsite->getId(), targetWebsiteId);
+    EXPECT_EQ(linkedWebsite->getPersonaId(), personaId);
+    EXPECT_EQ(unlinkedWebsite->getId(), otherWebsiteId);
+    EXPECT_EQ(unlinkedWebsite->getPersonaId(), -1);
+    EXPECT_EQ(storedWifi->getId(), wifiId);
+}
+
+/*
+ * Tests that linking a persona to a website throws when the persona does not exist.
+ */
+TEST_F(VaultSessionTest, LinkPersonaToEntryThrowsWhenPersonaDoesNotExist) {
+    VaultSession session("My Vault", makeEncKey(), makeAuthKey(), nullptr);
+
+    session.addCategory(makeCategory("Passwords"));
+    const auto categoryId = session.getCategories().front()->getId();
+
+    auto website = makeWebsite("notes", "Target", "alice", "secret", "https://example.com");
+    const auto websiteId = website->getId();
+    session.addEntryToCategory(categoryId, std::move(website));
+
+    EXPECT_THROW(session.linkPersonaToEntry(999999, categoryId, websiteId), PersonaNotFoundError);
+
+    const auto* storedWebsite = session.getWebsiteById(websiteId);
+    ASSERT_NE(storedWebsite, nullptr);
+    EXPECT_EQ(storedWebsite->getPersonaId(), -1);
+}
+
+/*
+ * Tests that linking a persona to a website throws when the category does not exist.
+ */
+TEST_F(VaultSessionTest, LinkPersonaToEntryThrowsWhenCategoryDoesNotExist) {
+    VaultSession session("My Vault", makeEncKey(), makeAuthKey(), nullptr);
+
+    session.addPersona(makePersona("Ada", "Lovelace"));
+    const auto personaId = session.getPersonas().front()->getId();
+    auto category = makeCategory("Passwords");
+    int64_t categoryId = category->getId();
+    session.addCategory(std::move(category));
+    auto website = makeWebsite("notes", "Target", "alice", "secret", "https://example.com");
+    const auto websiteId = website->getId();
+    session.addEntryToCategory(session.getCategories().front()->getId(), std::move(website));
+
+    EXPECT_THROW(session.linkPersonaToEntry(personaId, categoryId + 1, websiteId),
+                 CategoryNotFoundError);
+
+    const auto* storedWebsite = session.getWebsiteById(websiteId);
+    ASSERT_NE(storedWebsite, nullptr);
+    EXPECT_EQ(storedWebsite->getPersonaId(), -1);
+}
+
+/*
+ * Tests that linking a persona to a website throws when the entry does not exist in the category.
+ */
+TEST_F(VaultSessionTest, LinkPersonaToEntryThrowsWhenEntryDoesNotExist) {
+    VaultSession session("My Vault", makeEncKey(), makeAuthKey(), nullptr);
+
+    session.addPersona(makePersona("Ada", "Lovelace"));
+    const auto personaId = session.getPersonas().front()->getId();
+
+    session.addCategory(makeCategory("Passwords"));
+    const auto categoryId = session.getCategories().front()->getId();
+
+    auto website = makeWebsite("notes", "Target", "alice", "secret", "https://example.com");
+    const auto websiteId = website->getId();
+    session.addEntryToCategory(categoryId, std::move(website));
+
+    EXPECT_THROW(session.linkPersonaToEntry(personaId, categoryId, websiteId + 1),
+                 EntryNotFoundError);
+
+    const auto* storedWebsite = session.getWebsiteById(websiteId);
+    ASSERT_NE(storedWebsite, nullptr);
+    EXPECT_EQ(storedWebsite->getPersonaId(), -1);
+}
+
+/*
+ * Tests that linking a persona to a non-website entry throws and leaves the category unchanged.
+ */
+TEST_F(VaultSessionTest, LinkPersonaToEntryThrowsWhenEntryHasWrongType) {
+    VaultSession session("My Vault", makeEncKey(), makeAuthKey(), nullptr);
+
+    session.addPersona(makePersona("Ada", "Lovelace"));
+    const auto personaId = session.getPersonas().front()->getId();
+
+    session.addCategory(makeCategory("Passwords"));
+    const auto categoryId = session.getCategories().front()->getId();
+
+    auto website = makeWebsite("notes", "Target", "alice", "secret", "https://example.com");
+    auto wifi = std::make_unique<Wifi>("wifi notes", "Home Wi-Fi", "wifi-password");
+    const auto websiteId = website->getId();
+    const auto wifiId = wifi->getId();
+    session.addEntryToCategory(categoryId, std::move(website));
+    session.addEntryToCategory(categoryId, std::move(wifi));
+
+    EXPECT_THROW(session.linkPersonaToEntry(personaId, categoryId, wifiId), EntryNotGoodTypeError);
+
+    const auto* storedWebsite = session.getWebsiteById(websiteId);
+    ASSERT_NE(storedWebsite, nullptr);
+    EXPECT_EQ(storedWebsite->getPersonaId(), -1);
+}
+
+/*
+ * Tests that linking a persona to a credit card entry also throws because only websites are
+ * linkable.
+ */
+TEST_F(VaultSessionTest, LinkPersonaToEntryThrowsWhenEntryIsCreditCard) {
+    VaultSession session("My Vault", makeEncKey(), makeAuthKey(), nullptr);
+
+    session.addPersona(makePersona("Ada", "Lovelace"));
+    const auto personaId = session.getPersonas().front()->getId();
+
+    session.addCategory(makeCategory("Cards"));
+    const auto categoryId = session.getCategories().front()->getId();
+
+    auto website = makeWebsite("notes", "Target", "alice", "secret", "https://example.com");
+    auto card = std::make_unique<CreditCard>("Alice Example", "4111111111111111", "12/30", "123",
+                                             "card notes");
+    const auto websiteId = website->getId();
+    const auto cardId = card->getId();
+    session.addEntryToCategory(categoryId, std::move(website));
+    session.addEntryToCategory(categoryId, std::move(card));
+
+    EXPECT_THROW(session.linkPersonaToEntry(personaId, categoryId, cardId), EntryNotGoodTypeError);
+
+    const auto* storedWebsite = session.getWebsiteById(websiteId);
+    ASSERT_NE(storedWebsite, nullptr);
+    EXPECT_EQ(storedWebsite->getPersonaId(), -1);
+}
+
 /**
  * Test that getWebsiteById returns the matching website when the ID exists.
  */

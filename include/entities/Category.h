@@ -29,6 +29,13 @@ class Category : public Item {
      */
     bool removeEntry(int64_t entryId);
 
+    /**
+     * Finds an entry in the category by its ID.
+     * @param entryId The ID of the entry to find.
+     * @return A reference to the found entry or a null pointer if not found.
+     */
+    Entry* findEntryById(int64_t entryId);
+
     std::string getType() const override { return "Category"; }
 
     friend void to_json(json& j, const Category& category);
