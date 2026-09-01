@@ -25,7 +25,7 @@ class VaultSession : public DatedItem {
     // Must be a friend class so it can set and retrieve the auth and enc keys
     friend class VaultRepository;
 
-  public:
+public:
     /**
      * Constructs a new VaultSession.
      * @param name The name of the VaultSession.
@@ -33,19 +33,19 @@ class VaultSession : public DatedItem {
      * @param authKey The authentication key for the VaultSession.
      */
     VaultSession(std::string name, EncKey encKey, AuthKey authKey,
-                 std::unique_ptr<VaultHeader> header);
+        std::unique_ptr<VaultHeader> header);
 
     /**
      * Returns the name of the VaultSession.
      * @return The name of the VaultSession.
      */
-    const std::string& getName() const noexcept;
+    const std::string &getName() const noexcept;
 
     /**
      * Returns the categories in the VaultSession.
      * @return The categories in the VaultSession.
      */
-    const std::vector<std::unique_ptr<Category>>& getCategories() const noexcept;
+    const std::vector<std::unique_ptr<Category>> &getCategories() const noexcept;
 
     /**
      * Adds a category to the VaultSession.
@@ -57,7 +57,7 @@ class VaultSession : public DatedItem {
      * Returns the personas in the VaultSession.
      * @return The personas in the VaultSession.
      */
-    const std::vector<std::unique_ptr<Persona>>& getPersonas() const noexcept;
+    const std::vector<std::unique_ptr<Persona>> &getPersonas() const noexcept;
 
     /**
      * Adds a persona to the VaultSession.
@@ -70,6 +70,22 @@ class VaultSession : public DatedItem {
      * @param personaId The ID of the persona to remove.
      */
     void removePersona(int64_t personaId);
+
+    /**
+     * Links a persona to an entry in the VaultSession.
+     * @param personaId The ID of the persona to link.
+     * @param categoryId The ID of the category containing the entry to link the persona to.
+     * @param entryId The ID of the entry to link the persona to.
+     */
+    void linkPersonaToEntry(int64_t personaId, int64_t categoryId, int64_t entryId);
+
+    /**
+     * Returns a persona by its ID.
+     * @param personaId The ID of the persona to find.
+     * @return A reference to the found persona.
+     * @throws PersonaNotFoundError if the persona with the specified ID does not exist.
+     */
+    const std::unique_ptr<Persona> &getPersonaById(int64_t personaId) const;
 
     /**
      * Adds an entry to a category in the VaultSession.
@@ -91,14 +107,14 @@ class VaultSession : public DatedItem {
      * @param url The URL to search for.
      * @return A vector of pointers to the matching websites.
      */
-    std::vector<const Website*> getWebsiteByUrl(const std::string& url) const;
+    std::vector<const Website *> getWebsiteByUrl(const std::string &url) const;
 
     /**
      * Returns a website by its ID.
      * @param entryId The ID of the website to find.
      * @return A pointer to the website, or nullptr if not found.
      */
-    const Website* getWebsiteById(int64_t entryId) const;
+    const Website *getWebsiteById(int64_t entryId) const;
 
     /**
      * Removes an entry from a category in the VaultSession.
@@ -116,8 +132,8 @@ class VaultSession : public DatedItem {
      * @return A vector of pointers to the matching entries.
      * @throws CategoryNotFoundError if the category with the specified ID does not exist.
      */
-    std::vector<const Entry*> searchEntriesInCategory(int64_t categoryId,
-                                                      const std::string& searchTerm) const;
+    std::vector<const Entry *> searchEntriesInCategory(int64_t categoryId,
+        const std::string &searchTerm) const;
 
     /*
      * @brief Parses a VaultSession from a JSON representation.
@@ -128,10 +144,10 @@ class VaultSession : public DatedItem {
      */
     static VaultSession parse(Bytes vaultBody);
 
-    friend void to_json(json& j, const VaultSession& vaultSession);
-    friend void from_json(const json& j, VaultSession& vaultSession);
+    friend void to_json(json &j, const VaultSession &vaultSession);
+    friend void from_json(const json &j, VaultSession &vaultSession);
 
-  private:
+private:
     // Default constructor for VaultSession. Needed for JSON deserialization.
     VaultSession() = default;
 
@@ -141,7 +157,7 @@ class VaultSession : public DatedItem {
      * @return A reference to the found category.
      * @throws CategoryNotFoundError if the category with the specified ID does not exist.
      */
-    std::unique_ptr<Category>& findCategoryById(int64_t categoryId);
+    std::unique_ptr<Category> &findCategoryById(int64_t categoryId);
 
     /**
      * Finds a category by its ID (const version).
@@ -149,7 +165,7 @@ class VaultSession : public DatedItem {
      * @return A reference to the found category.
      * @throws CategoryNotFoundError if the category with the specified ID does not exist.
      */
-    const std::unique_ptr<Category>& findCategoryById(int64_t categoryId) const;
+    const std::unique_ptr<Category> &findCategoryById(int64_t categoryId) const;
 
     EncKey encKey;
     AuthKey authKey;
@@ -162,21 +178,31 @@ class VaultSession : public DatedItem {
 // ----------------------------- Custom exceptions -----------------------------
 
 class VaultSessionError : public std::runtime_error {
-  public:
+public:
     using std::runtime_error::runtime_error;
 };
 
 class CategoryNotFoundError : public VaultSessionError {
-  public:
+public:
+    using VaultSessionError::VaultSessionError;
+};
+
+class PersonaNotFoundError : public VaultSessionError {
+public:
     using VaultSessionError::VaultSessionError;
 };
 
 class ParseError : public VaultSessionError {
-  public:
+public:
     using VaultSessionError::VaultSessionError;
 };
 
 class EntryNotFoundError : public VaultSessionError {
-  public:
+public:
+    using VaultSessionError::VaultSessionError;
+};
+
+class EntryNotGoodTypeError : public VaultSessionError {
+public:
     using VaultSessionError::VaultSessionError;
 };

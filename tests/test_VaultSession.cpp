@@ -23,7 +23,7 @@
 #include <utility>
 
 class VaultSessionTest : public ::testing::Test {
-  protected:
+protected:
     EncKey makeEncKey() {
         EncKey key{};
         return key;
@@ -36,8 +36,8 @@ class VaultSessionTest : public ::testing::Test {
 
     std::unique_ptr<Persona> makePersona(std::string firstName, std::string lastName) {
         return std::make_unique<Persona>(std::move(firstName), std::move(lastName),
-                                         std::chrono::system_clock::time_point{}, "Address",
-                                         "000000000");
+            std::chrono::system_clock::time_point{}, "Address",
+            "000000000");
     }
 
     std::unique_ptr<Category> makeCategory(std::string name) {
@@ -45,7 +45,7 @@ class VaultSessionTest : public ::testing::Test {
     }
 
     class TestEntry : public Entry {
-      public:
+    public:
         explicit TestEntry(std::string notes = {}) : Entry(std::move(notes)) {}
 
         std::string getType() const override { return "TestEntry"; }
@@ -56,64 +56,64 @@ class VaultSessionTest : public ::testing::Test {
     }
 
     json makeVaultJson() {
-        json website = {{"type", "Website"},
-                        {"id", 3000},
-                        {"creationAt", 1704067200000LL},
-                        {"updatedAt", 1704067201000LL},
-                        {"notes", "Website notes"},
-                        {"title", "Example"},
-                        {"comments", "Example comments"},
-                        {"username", "alice"},
-                        {"password", "website-password"},
-                        {"url", "https://example.com"},
-                        {"alias", "Example alias"},
-                        {"personaId", 4000}};
+        json website = { { "type", "Website" },
+                        { "id", 3000 },
+                        { "creationAt", 1704067200000LL },
+                        { "updatedAt", 1704067201000LL },
+                        { "notes", "Website notes" },
+                        { "title", "Example" },
+                        { "comments", "Example comments" },
+                        { "username", "alice" },
+                        { "password", "website-password" },
+                        { "url", "https://example.com" },
+                        { "alias", "Example alias" },
+                        { "personaId", 4000 } };
 
-        json wifi = {{"type", "Wifi"},
-                     {"id", 3001},
-                     {"creationAt", 1704067200000LL},
-                     {"updatedAt", 1704067201000LL},
-                     {"notes", "Wi-Fi notes"},
-                     {"networkName", "Home Wi-Fi"},
-                     {"password", "wifi-password"}};
+        json wifi = { { "type", "Wifi" },
+                     { "id", 3001 },
+                     { "creationAt", 1704067200000LL },
+                     { "updatedAt", 1704067201000LL },
+                     { "notes", "Wi-Fi notes" },
+                     { "networkName", "Home Wi-Fi" },
+                     { "password", "wifi-password" } };
 
-        json creditCard = {{"type", "CreditCard"},
-                           {"id", 3002},
-                           {"creationAt", 1704067200000LL},
-                           {"updatedAt", 1704067201000LL},
-                           {"notes", "Card notes"},
-                           {"cardHolderName", "Alice Example"},
-                           {"cardNumber", "4111111111111111"},
-                           {"expiration", "12/30"},
-                           {"securityCode", "123"}};
+        json creditCard = { { "type", "CreditCard" },
+                           { "id", 3002 },
+                           { "creationAt", 1704067200000LL },
+                           { "updatedAt", 1704067201000LL },
+                           { "notes", "Card notes" },
+                           { "cardHolderName", "Alice Example" },
+                           { "cardNumber", "4111111111111111" },
+                           { "expiration", "12/30" },
+                           { "securityCode", "123" } };
 
-        return {{"id", 1000},
-                {"creationAt", 1704067200000LL},
-                {"updatedAt", 1704153600000LL},
-                {"name", "Parsed Vault"},
-                {"categories",
-                 {{{"id", 2000}, {"name", "Passwords"}, {"entries", {website, wifi, creditCard}}}}},
-                {"personas",
-                 {{{"id", 4000},
-                   {"creationAt", 1704067200000LL},
-                   {"updatedAt", 1704067201000LL},
-                   {"firstName", "Alice"},
-                   {"lastName", "Example"},
-                   {"dateOfBirth", 946684800000LL},
-                   {"address", "Example Street 1"},
-                   {"phone", "+41 79 123 45 67"}}}}};
+        return { { "id", 1000 },
+                { "creationAt", 1704067200000LL },
+                { "updatedAt", 1704153600000LL },
+                { "name", "Parsed Vault" },
+                { "categories",
+                 { { { "id", 2000 },{ "name", "Passwords" },{ "entries",{ website, wifi, creditCard } } } } },
+                { "personas",
+                 { { { "id", 4000 },
+                   { "creationAt", 1704067200000LL },
+                   { "updatedAt", 1704067201000LL },
+                   { "firstName", "Alice" },
+                   { "lastName", "Example" },
+                   { "dateOfBirth", 946684800000LL },
+                   { "address", "Example Street 1" },
+                   { "phone", "+41 79 123 45 67" } } } } };
     }
 
     std::unique_ptr<Website> makeWebsite(std::string notes, std::string title, std::string username,
-                                         std::string password, std::string url) {
+        std::string password, std::string url) {
         return std::make_unique<Website>(std::move(notes), std::move(title), std::move(username),
-                                         std::move(password), std::move(url));
+            std::move(password), std::move(url));
     }
 
     std::unique_ptr<Website> makeWebsite(std::string url, std::string notes = "notes",
-                                         std::string title = "Title") {
+        std::string title = "Title") {
         return std::make_unique<Website>(std::move(notes), std::move(title), "username", "password",
-                                         std::move(url));
+            std::move(url));
     }
 };
 
@@ -228,12 +228,179 @@ TEST_F(VaultSessionTest, AddEntryToMissingCategoryThrowsAndLeavesStateUnchanged)
     const auto missingCategoryId = session.getCategories().front()->getId() + 1;
 
     EXPECT_THROW(session.addEntryToCategory(missingCategoryId, makeEntry("gmail")),
-                 CategoryNotFoundError);
+        CategoryNotFoundError);
 
     EXPECT_EQ(session.getCategories().size(), 1U);
     EXPECT_EQ(session.getCategories().front()->getName(), "Passwords");
     EXPECT_TRUE(session.getCategories().front()->getEntries().empty());
     EXPECT_EQ(session.getLastModifiedDate(), lastModifiedBefore);
+}
+
+/*
+ * Tests that linking a persona to a website updates the website persona ID and leaves other
+ * entries untouched.
+ */
+TEST_F(VaultSessionTest, LinkPersonaToEntryLinksMatchingWebsiteOnly) {
+    VaultSession session("My Vault", makeEncKey(), makeAuthKey(), nullptr);
+
+    session.addPersona(makePersona("Ada", "Lovelace"));
+    const auto personaId = session.getPersonas().front()->getId();
+
+    session.addCategory(makeCategory("Passwords"));
+    const auto categoryId = session.getCategories().front()->getId();
+
+    auto targetWebsite = makeWebsite("target notes", "Target", "alice", "secret",
+        "https://target.example.com");
+    auto otherWebsite = makeWebsite("other notes", "Other", "bob", "secret",
+        "https://other.example.com");
+    auto wifi = std::make_unique<Wifi>("wifi notes", "Home Wi-Fi", "wifi-password");
+
+    const auto targetWebsiteId = targetWebsite->getId();
+    const auto otherWebsiteId = otherWebsite->getId();
+    const auto wifiId = wifi->getId();
+
+    session.addEntryToCategory(categoryId, std::move(targetWebsite));
+    session.addEntryToCategory(categoryId, std::move(otherWebsite));
+    session.addEntryToCategory(categoryId, std::move(wifi));
+
+    session.linkPersonaToEntry(personaId, categoryId, targetWebsiteId);
+
+    const auto &entries = session.getCategories().front()->getEntries();
+    const auto *linkedWebsite = dynamic_cast<const Website *>(entries[0].get());
+    const auto *unlinkedWebsite = dynamic_cast<const Website *>(entries[1].get());
+    const auto *storedWifi = dynamic_cast<const Wifi *>(entries[2].get());
+
+    ASSERT_NE(linkedWebsite, nullptr);
+    ASSERT_NE(unlinkedWebsite, nullptr);
+    ASSERT_NE(storedWifi, nullptr);
+
+    EXPECT_EQ(linkedWebsite->getId(), targetWebsiteId);
+    EXPECT_EQ(linkedWebsite->getPersonaId(), personaId);
+    EXPECT_EQ(unlinkedWebsite->getId(), otherWebsiteId);
+    EXPECT_EQ(unlinkedWebsite->getPersonaId(), -1);
+    EXPECT_EQ(storedWifi->getId(), wifiId);
+}
+
+/*
+ * Tests that linking a persona to a website throws when the persona does not exist.
+ */
+TEST_F(VaultSessionTest, LinkPersonaToEntryThrowsWhenPersonaDoesNotExist) {
+    VaultSession session("My Vault", makeEncKey(), makeAuthKey(), nullptr);
+
+    session.addCategory(makeCategory("Passwords"));
+    const auto categoryId = session.getCategories().front()->getId();
+
+    auto website = makeWebsite("notes", "Target", "alice", "secret", "https://example.com");
+    const auto websiteId = website->getId();
+    session.addEntryToCategory(categoryId, std::move(website));
+
+    EXPECT_THROW(session.linkPersonaToEntry(999999, categoryId, websiteId), PersonaNotFoundError);
+
+    const auto *storedWebsite = session.getWebsiteById(websiteId);
+    ASSERT_NE(storedWebsite, nullptr);
+    EXPECT_EQ(storedWebsite->getPersonaId(), -1);
+}
+
+/*
+ * Tests that linking a persona to a website throws when the category does not exist.
+ */
+TEST_F(VaultSessionTest, LinkPersonaToEntryThrowsWhenCategoryDoesNotExist) {
+    VaultSession session("My Vault", makeEncKey(), makeAuthKey(), nullptr);
+
+    session.addPersona(makePersona("Ada", "Lovelace"));
+    const auto personaId = session.getPersonas().front()->getId();
+    auto category = makeCategory("Passwords");
+    int64_t categoryId = category->getId();
+    session.addCategory(std::move(category));
+    auto website = makeWebsite("notes", "Target", "alice", "secret", "https://example.com");
+    const auto websiteId = website->getId();
+    session.addEntryToCategory(session.getCategories().front()->getId(), std::move(website));
+
+    EXPECT_THROW(session.linkPersonaToEntry(personaId, categoryId + 1, websiteId), CategoryNotFoundError);
+
+    const auto *storedWebsite = session.getWebsiteById(websiteId);
+    ASSERT_NE(storedWebsite, nullptr);
+    EXPECT_EQ(storedWebsite->getPersonaId(), -1);
+}
+
+/*
+ * Tests that linking a persona to a website throws when the entry does not exist in the category.
+ */
+TEST_F(VaultSessionTest, LinkPersonaToEntryThrowsWhenEntryDoesNotExist) {
+    VaultSession session("My Vault", makeEncKey(), makeAuthKey(), nullptr);
+
+    session.addPersona(makePersona("Ada", "Lovelace"));
+    const auto personaId = session.getPersonas().front()->getId();
+
+    session.addCategory(makeCategory("Passwords"));
+    const auto categoryId = session.getCategories().front()->getId();
+
+    auto website = makeWebsite("notes", "Target", "alice", "secret", "https://example.com");
+    const auto websiteId = website->getId();
+    session.addEntryToCategory(categoryId, std::move(website));
+
+    EXPECT_THROW(session.linkPersonaToEntry(personaId, categoryId, websiteId + 1),
+        EntryNotFoundError);
+
+    const auto *storedWebsite = session.getWebsiteById(websiteId);
+    ASSERT_NE(storedWebsite, nullptr);
+    EXPECT_EQ(storedWebsite->getPersonaId(), -1);
+}
+
+/*
+ * Tests that linking a persona to a non-website entry throws and leaves the category unchanged.
+ */
+TEST_F(VaultSessionTest, LinkPersonaToEntryThrowsWhenEntryHasWrongType) {
+    VaultSession session("My Vault", makeEncKey(), makeAuthKey(), nullptr);
+
+    session.addPersona(makePersona("Ada", "Lovelace"));
+    const auto personaId = session.getPersonas().front()->getId();
+
+    session.addCategory(makeCategory("Passwords"));
+    const auto categoryId = session.getCategories().front()->getId();
+
+    auto website = makeWebsite("notes", "Target", "alice", "secret", "https://example.com");
+    auto wifi = std::make_unique<Wifi>("wifi notes", "Home Wi-Fi", "wifi-password");
+    const auto websiteId = website->getId();
+    const auto wifiId = wifi->getId();
+    session.addEntryToCategory(categoryId, std::move(website));
+    session.addEntryToCategory(categoryId, std::move(wifi));
+
+    EXPECT_THROW(session.linkPersonaToEntry(personaId, categoryId, wifiId),
+        EntryNotGoodTypeError);
+
+    const auto *storedWebsite = session.getWebsiteById(websiteId);
+    ASSERT_NE(storedWebsite, nullptr);
+    EXPECT_EQ(storedWebsite->getPersonaId(), -1);
+}
+
+/*
+ * Tests that linking a persona to a credit card entry also throws because only websites are
+ * linkable.
+ */
+TEST_F(VaultSessionTest, LinkPersonaToEntryThrowsWhenEntryIsCreditCard) {
+    VaultSession session("My Vault", makeEncKey(), makeAuthKey(), nullptr);
+
+    session.addPersona(makePersona("Ada", "Lovelace"));
+    const auto personaId = session.getPersonas().front()->getId();
+
+    session.addCategory(makeCategory("Cards"));
+    const auto categoryId = session.getCategories().front()->getId();
+
+    auto website = makeWebsite("notes", "Target", "alice", "secret", "https://example.com");
+    auto card = std::make_unique<CreditCard>("Alice Example", "4111111111111111", "12/30",
+        "123", "card notes");
+    const auto websiteId = website->getId();
+    const auto cardId = card->getId();
+    session.addEntryToCategory(categoryId, std::move(website));
+    session.addEntryToCategory(categoryId, std::move(card));
+
+    EXPECT_THROW(session.linkPersonaToEntry(personaId, categoryId, cardId),
+        EntryNotGoodTypeError);
+
+    const auto *storedWebsite = session.getWebsiteById(websiteId);
+    ASSERT_NE(storedWebsite, nullptr);
+    EXPECT_EQ(storedWebsite->getPersonaId(), -1);
 }
 
 /**
@@ -249,7 +416,7 @@ TEST_F(VaultSessionTest, GetWebsiteByIdReturnsMatchingWebsite) {
     const auto expectedWebsite = website.get();
     session.addEntryToCategory(categoryId, std::move(website));
 
-    const auto* foundWebsite = session.getWebsiteById(expectedWebsiteId);
+    const auto *foundWebsite = session.getWebsiteById(expectedWebsiteId);
 
     ASSERT_NE(foundWebsite, nullptr);
     EXPECT_EQ(foundWebsite, expectedWebsite);
@@ -278,7 +445,7 @@ TEST_F(VaultSessionTest, GetWebsiteByIdSearchesAcrossCategories) {
     session.addEntryToCategory(personalCategoryId, std::move(personalWebsite));
     session.addEntryToCategory(workCategoryId, std::move(workWebsite));
 
-    const auto* foundWebsite = session.getWebsiteById(workWebsiteId);
+    const auto *foundWebsite = session.getWebsiteById(workWebsiteId);
 
     ASSERT_NE(foundWebsite, nullptr);
     EXPECT_EQ(foundWebsite->getId(), workWebsiteId);
@@ -297,7 +464,7 @@ TEST_F(VaultSessionTest, GetWebsiteByIdReturnsNullptrWhenWebsiteDoesNotExist) {
     auto websiteId = website->getId();
     session.addEntryToCategory(session.getCategories().front()->getId(), std::move(website));
 
-    const auto* foundWebsite = session.getWebsiteById(websiteId + 1);
+    const auto *foundWebsite = session.getWebsiteById(websiteId + 1);
 
     EXPECT_EQ(foundWebsite, nullptr);
 }
@@ -311,9 +478,9 @@ TEST_F(VaultSessionTest, GetWebsiteByUrlReturnsAllMatchingWebsites) {
     const auto categoryId = session.getCategories().front()->getId();
 
     session.addEntryToCategory(categoryId,
-                               std::move(makeWebsite("https://example.com", "first", "First")));
+        std::move(makeWebsite("https://example.com", "first", "First")));
     session.addEntryToCategory(categoryId,
-                               std::move(makeWebsite("https://example.com", "second", "Second")));
+        std::move(makeWebsite("https://example.com", "second", "Second")));
 
     const auto websites = session.getWebsiteByUrl("https://example.com");
 
@@ -333,7 +500,7 @@ TEST_F(VaultSessionTest, GetWebsiteByUrlReturnsEmptyVectorWhenNoWebsiteMatches) 
     VaultSession session("My Vault", makeEncKey(), makeAuthKey(), nullptr);
     session.addCategory(std::move(makeCategory("Passwords")));
     session.addEntryToCategory(session.getCategories().front()->getId(),
-                               std::move(makeWebsite("https://example.com")));
+        std::move(makeWebsite("https://example.com")));
 
     const auto websites = session.getWebsiteByUrl("https://missing.example.com");
 
@@ -367,7 +534,7 @@ TEST_F(VaultSessionTest, GetWebsiteByUrlMatchesWhenWebsiteUrlContainsRequestedUr
     const auto categoryId = session.getCategories().front()->getId();
 
     session.addEntryToCategory(categoryId,
-                               std::move(makeWebsite("https://example.com/login", "notes")));
+        std::move(makeWebsite("https://example.com/login", "notes")));
 
     const auto websites = session.getWebsiteByUrl("example.com");
 
@@ -578,7 +745,7 @@ TEST_F(VaultSessionTest, SearchEntriesInCategoryOnlyReturnsEntriesFromRequestedC
 
     ASSERT_EQ(matches.size(), 2U);
     std::vector<int64_t> matchedIds;
-    for (const auto* entry : matches) {
+    for (const auto *entry : matches) {
         ASSERT_NE(entry, nullptr);
         matchedIds.push_back(entry->getId());
     }
@@ -649,7 +816,7 @@ TEST_F(VaultSessionTest, ParseReadsVaultMetadata) {
     const json input = makeVaultJson();
 
     const std::string body = input.dump();
-    const Bytes bytes{reinterpret_cast<const uint8_t*>(body.data()), body.size()};
+    const Bytes bytes{ reinterpret_cast<const uint8_t *>(body.data()), body.size() };
 
     VaultSession session = VaultSession::parse(bytes);
 
@@ -666,7 +833,7 @@ TEST_F(VaultSessionTest, ParseReadsCategoriesAndPersonas) {
     const json input = makeVaultJson();
 
     const std::string body = input.dump();
-    const Bytes bytes{reinterpret_cast<const uint8_t*>(body.data()), body.size()};
+    const Bytes bytes{ reinterpret_cast<const uint8_t *>(body.data()), body.size() };
 
     VaultSession session = VaultSession::parse(bytes);
 
@@ -688,15 +855,15 @@ TEST_F(VaultSessionTest, ParseReadsAllSupportedEntryTypes) {
     const json input = makeVaultJson();
 
     const std::string body = input.dump();
-    const Bytes bytes{reinterpret_cast<const uint8_t*>(body.data()), body.size()};
+    const Bytes bytes{ reinterpret_cast<const uint8_t *>(body.data()), body.size() };
 
     VaultSession session = VaultSession::parse(bytes);
 
-    const auto& entries = session.getCategories()[0]->getEntries();
+    const auto &entries = session.getCategories()[0]->getEntries();
 
     ASSERT_EQ(entries.size(), 3U);
 
-    const auto* website = dynamic_cast<const Website*>(entries[0].get());
+    const auto *website = dynamic_cast<const Website *>(entries[0].get());
     ASSERT_NE(website, nullptr);
     EXPECT_EQ(website->getId(), 3000);
     EXPECT_EQ(website->getTitle(), "Example");
@@ -704,13 +871,13 @@ TEST_F(VaultSessionTest, ParseReadsAllSupportedEntryTypes) {
     EXPECT_EQ(website->getUrl(), "https://example.com");
     EXPECT_EQ(website->getPersonaId(), 4000);
 
-    const auto* wifi = dynamic_cast<const Wifi*>(entries[1].get());
+    const auto *wifi = dynamic_cast<const Wifi *>(entries[1].get());
     ASSERT_NE(wifi, nullptr);
     EXPECT_EQ(wifi->getId(), 3001);
     EXPECT_EQ(wifi->getNetworkName(), "Home Wi-Fi");
     EXPECT_EQ(wifi->getPassword(), "wifi-password");
 
-    const auto* card = dynamic_cast<const CreditCard*>(entries[2].get());
+    const auto *card = dynamic_cast<const CreditCard *>(entries[2].get());
     ASSERT_NE(card, nullptr);
     EXPECT_EQ(card->getId(), 3002);
     EXPECT_EQ(card->getCardHolderName(), "Alice Example");
@@ -723,7 +890,7 @@ TEST_F(VaultSessionTest, ParseReadsAllSupportedEntryTypes) {
 TEST_F(VaultSessionTest, ParseInvalidJsonThrows) {
     const std::string body = "{ invalid json }";
 
-    const Bytes bytes{reinterpret_cast<const uint8_t*>(body.data()), body.size()};
+    const Bytes bytes{ reinterpret_cast<const uint8_t *>(body.data()), body.size() };
 
     EXPECT_THROW(VaultSession::parse(bytes), ParseError);
 }
@@ -737,7 +904,7 @@ TEST_F(VaultSessionTest, ParseMissingRequiredFieldThrows) {
     input.erase("name");
 
     const std::string body = input.dump();
-    const Bytes bytes{reinterpret_cast<const uint8_t*>(body.data()), body.size()};
+    const Bytes bytes{ reinterpret_cast<const uint8_t *>(body.data()), body.size() };
 
     EXPECT_THROW(VaultSession::parse(bytes), ParseError);
 }
