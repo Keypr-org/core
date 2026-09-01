@@ -54,6 +54,14 @@ class VaultSession : public DatedItem {
     void addCategory(std::unique_ptr<Category> category);
 
     /**
+     * Returns the entries in a category.
+     * @param categoryId The ID of the category.
+     * @return A vector of pointers to the entries in the category.
+     * @throws CategoryNotFoundError if the category with the specified ID does not exist.
+     */
+    const std::vector<std::unique_ptr<Entry>>& getEntriesInCategory(int64_t categoryId) const;
+
+    /**
      * Returns the personas in the VaultSession.
      * @return The personas in the VaultSession.
      */

@@ -34,6 +34,12 @@ void VaultSession::addCategory(std::unique_ptr<Category> category) {
     setLastModifiedDate(std::chrono::system_clock::now());
 }
 
+const std::vector<std::unique_ptr<Entry>>&
+VaultSession::getEntriesInCategory(int64_t categoryId) const {
+    const std::unique_ptr<Category>& category = findCategoryById(categoryId);
+    return category->getEntries();
+}
+
 const std::vector<std::unique_ptr<Persona>>& VaultSession::getPersonas() const noexcept {
     return personas;
 }
