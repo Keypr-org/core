@@ -180,6 +180,24 @@ const Website* VaultSession::getWebsiteById(int64_t entryId) const {
     return nullptr;
 }
 
+void VaultSession::setAliasForWebsite(int64_t categoryId, int64_t entryId,
+                                      const std::string& aliasId, const std::string& alias) {
+    std::unique_ptr<Category>& category = findCategoryById(categoryId);
+    auto entry = category->findEntryById(entryId);
+    if (entry == nullptr) {
+        throw EntryNotFoundError("Entry with ID " + std::to_string(entryId) +
+                                 " not found in category with ID " + std::to_string(categoryId) +
+                                 ".");
+    }
+    if (auto websiteEntry = dynamic_cast<Website*>(entry)) {
+        websiteEntry->setAlias(alias);
+        websiteEntry->setAliasId(aliasId);
+    } else {
+        throw EntryNotGoodTypeError("Entry with ID " + std::to_string(entryId) +
+                                    " is not a Website entry and cannot have an alias set.");
+    }
+}
+
 const std::unique_ptr<Category>& VaultSession::findCategoryById(int64_t categoryId) const {
     auto it = std::find_if(categories.begin(), categories.end(),
                            [categoryId](const std::unique_ptr<Category>& category) {
