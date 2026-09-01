@@ -92,3 +92,22 @@ std::vector<uint8_t> CryptoService::decrypt(const EncKey& key, const EncNonce& n
     }
     return out;
 }
+
+std::pair<std::array<uint8_t, crypto_secretbox_MACBYTES>, std::vector<uint8_t>>
+CryptoService::encrypt(const EncKey& key, const EncNonce& nonce, Bytes plaintext) {
+    if (sodium_init() < 0) {
+        throw EncryptionError("Failed to initialize libsodium");
+    }
+
+    std::vector<uint8_t> ciphertext(plaintext.size());
+
+    std::array<uint8_t, crypto_secretbox_MACBYTES> mac{};
+
+    if (plaintext.size() != 0 &&
+        crypto_secretbox_detached(ciphertext.data(), mac.data(), plaintext.data(), plaintext.size(),
+                                  nonce.data(), key.data()) != 0) {
+        throw EncryptionError("Encryption failed");
+    }
+
+    return std::make_pair(mac, ciphertext);
+}
