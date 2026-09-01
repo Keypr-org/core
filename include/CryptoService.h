@@ -85,6 +85,21 @@ class CryptoService {
      */
     static std::vector<uint8_t> decrypt(const EncKey& key, const EncNonce& nonce, const EncMAC& mac,
                                         Bytes ciphertext);
+
+    /*
+     * @brief Encrypts a plaintext message using a given key and nonce, returning the authentication
+     * MAC
+     *
+     * @param key The encryption/decryption key to use for encryption.
+     * @param nonce The nonce to use during encryption.
+     * @param plaintext The plaintext message to encrypt.
+     *
+     * @return A pair containing the authentication MAC and a vector containing the ciphertext.
+     *
+     * @throws EncryptionError If the encryption process fails or if the key or nonce is invalid.
+     */
+    static std::pair<std::array<uint8_t, crypto_secretbox_MACBYTES>, std::vector<uint8_t>>
+    encrypt(const EncKey& key, const EncNonce& nonce, Bytes plaintext);
 };
 
 // ----------  CryptoService exceptions ---------------
@@ -105,6 +120,11 @@ class AuthenticationError : public CryptoServiceError {
 };
 
 class DecryptionError : public CryptoServiceError {
+  public:
+    using CryptoServiceError::CryptoServiceError;
+};
+
+class EncryptionError : public CryptoServiceError {
   public:
     using CryptoServiceError::CryptoServiceError;
 };
