@@ -1,10 +1,11 @@
 #include "entities/Website.h"
 
 Website::Website(std::string notes, std::string title, std::string username, std::string password,
-                 std::string url, std::string comments, int64_t personaId, std::string alias)
+                 std::string url, std::string comments, int64_t personaId, std::string aliasId,
+                 std::string alias)
     : Entry(std::move(notes)), title(std::move(title)), comments(std::move(comments)),
       username(std::move(username)), password(std::move(password)), url(std::move(url)),
-      personaId(personaId), alias(std::move(alias)) {}
+      personaId(personaId), aliasId(std::move(aliasId)), alias(std::move(alias)) {}
 
 const std::string& Website::getTitle() const noexcept {
     return title;
@@ -60,6 +61,15 @@ void Website::setPersona(int64_t personaId) {
     setLastModifiedDate(std::chrono::system_clock::now());
 }
 
+const std::string& Website::getAliasId() const noexcept {
+    return aliasId;
+}
+
+void Website::setAliasId(std::string aliasId) {
+    this->aliasId = std::move(aliasId);
+    setLastModifiedDate(std::chrono::system_clock::now());
+}
+
 const std::string& Website::getAlias() const noexcept {
     return alias;
 }
@@ -77,6 +87,7 @@ void to_json(json& j, const Website& website) {
     j["username"] = website.username;
     j["password"] = website.password;
     j["url"] = website.url;
+    j["aliasId"] = website.aliasId;
     j["alias"] = website.alias;
     j["personaId"] = website.personaId;
 }
@@ -89,6 +100,7 @@ void from_json(const json& j, Website& website) {
     j.at("username").get_to(website.username);
     j.at("password").get_to(website.password);
     j.at("url").get_to(website.url);
+    j.at("aliasId").get_to(website.aliasId);
     j.at("alias").get_to(website.alias);
     j.at("personaId").get_to(website.personaId);
 }
