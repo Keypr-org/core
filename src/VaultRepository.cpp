@@ -110,7 +110,7 @@ std::unique_ptr<VaultSession> VaultRepository::createVault(const std::string& ma
     }
 }
 
-bool VaultRepository::lockVault(const VaultSession& session, std::string filename) {
+bool VaultRepository::lockVault(const VaultSession& session, const std::string& filename) const {
     try { // Serialize session to JSON
         std::vector<uint8_t> vaultBodyPlaintext = VaultSession::serialize(session);
 
