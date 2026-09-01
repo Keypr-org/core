@@ -222,3 +222,15 @@ TEST_F(VaultRepositoryTest, unlockVaultThrowsUnlockVaultErrorForCorruptedVaultFi
     VaultRepository repo;
     EXPECT_THROW(repo.unlockVault(masterpass, filename), UnlockVaultError);
 }
+
+/*
+ * createVault creates a new vault with the given name and returns a VaultSession
+ */
+TEST_F(VaultRepositoryTest, createVaultCreatesNewVaultAndReturnsVaultSession) {
+    VaultRepository repo;
+    EXPECT_NO_THROW({
+        auto session = repo.createVault(masterpass, "New Vault");
+        EXPECT_NE(session, nullptr);
+        EXPECT_EQ(session->getName(), "New Vault");
+    });
+}

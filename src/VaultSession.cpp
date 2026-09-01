@@ -15,9 +15,11 @@
 #include "entities/Website.h"
 #include "entities/Wifi.h"
 
-VaultSession::VaultSession(std::string name, EncKey encKey, AuthKey authKey)
+VaultSession::VaultSession(std::string name, EncKey encKey, AuthKey authKey,
+                           std::unique_ptr<VaultHeader> header)
     : DatedItem(std::chrono::system_clock::now(), std::chrono::system_clock::now()),
-      name(std::move(name)), encKey(std::move(encKey)), authKey(std::move(authKey)) {}
+      name(std::move(name)), encKey(std::move(encKey)), authKey(std::move(authKey)),
+      header(std::move(header)) {}
 
 const std::string& VaultSession::getName() const noexcept {
     return name;

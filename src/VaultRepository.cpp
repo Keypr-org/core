@@ -4,6 +4,8 @@
 #include "RawVault.h"
 #include "Types.h"
 
+#include <sodium.h>
+
 // The derived key length is the sum of the encryption key size and the authentication key size
 // because it will be split into two parts: one for encryption and one for authentication.
 constexpr uint64_t KeyDerivationLength = EncKey{}.size() + AuthKey{}.size();
@@ -56,6 +58,7 @@ std::unique_ptr<VaultSession> VaultRepository::unlockVault(const std::string& ma
         // Set encryption and authentication keys in the VaultSession
         vaultSession.encKey = encKey;
         vaultSession.authKey = authKey;
+        vaultSession.header = std::make_unique<VaultHeader>(rawVault.header());
 
         return std::make_unique<VaultSession>(std::move(vaultSession));
 
@@ -72,5 +75,37 @@ std::unique_ptr<VaultSession> VaultRepository::unlockVault(const std::string& ma
         return nullptr;
     } catch (ParseError& e) {
         throw UnlockVaultError("Failed to parse decrypted vault body: " + std::string(e.what()));
+    }
+}
+
+std::unique_ptr<VaultSession> VaultRepository::createVault(const std::string& masterpass,
+                                                           const std::string& vaultName) const {
+    try {
+        // Generate salt
+        std::array<uint8_t, crypto_pwhash_SALTBYTES> argon2Salt;
+        randombytes_buf(argon2Salt.data(), argon2Salt.size());
+
+        // Create header
+        std::array<uint8_t, MAGIC_BYTES_SIZE> magicBytes;
+        for (size_t i = 0; i < MAGIC_BYTES_SIZE; ++i) {
+            magicBytes[i] = VAULT_MAGIC_BYTES[i];
+        }
+        VaultHeader header(magicBytes, VAULT_FORMAT_CURRENT_VERSION, argon2Salt,
+                           crypto_pwhash_OPSLIMIT_INTERACTIVE, crypto_pwhash_MEMLIMIT_INTERACTIVE);
+
+        std::vector<uint8_t> derivedKey =
+            CryptoService::deriveKey(masterpass, KeyDerivationLength, header.argon2Salt(),
+                                     header.argon2OpLimit(), header.argon2MemLimit());
+
+        // Split the derived key into encryption and authentication keys
+        EncKey encKey;
+        AuthKey authKey;
+        std::copy(derivedKey.begin(), derivedKey.begin() + encKey.size(), encKey.begin());
+        std::copy(derivedKey.begin() + encKey.size(), derivedKey.end(), authKey.begin());
+
+        return std::make_unique<VaultSession>(vaultName, encKey, authKey,
+                                              std::make_unique<VaultHeader>(header));
+    } catch (KeyDerivationError& e) {
+        throw CreateVaultError("Failed to derive keys: " + std::string(e.what()));
     }
 }

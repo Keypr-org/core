@@ -29,17 +29,16 @@ class VaultHeader {
     const uint64_t _argon2OpLimit;
     const uint64_t _argon2MemLimit;
 
-    // Constructor is private because VaultHeader should always be created using its parse method
-    VaultHeader(std::array<uint8_t, MAGIC_BYTES_SIZE> magicBytes, uint32_t formatVersion,
-                std::array<uint8_t, ARGON2_SALT_SIZE> argon2Salt, uint64_t argon2OpLimit,
-                uint64_t argon2MemLimit)
-        : _magicBytes(magicBytes), _formatVersion(formatVersion), _argon2Salt(argon2Salt),
-          _argon2OpLimit(argon2OpLimit), _argon2MemLimit(argon2MemLimit) {}
 
     static uint32_t read_u32_le(Bytes data);
     static uint64_t read_u64_le(Bytes data);
 
   public:
+    VaultHeader(std::array<uint8_t, MAGIC_BYTES_SIZE> magicBytes, uint32_t formatVersion,
+                std::array<uint8_t, ARGON2_SALT_SIZE> argon2Salt, uint64_t argon2OpLimit,
+                uint64_t argon2MemLimit)
+        : _magicBytes(magicBytes), _formatVersion(formatVersion), _argon2Salt(argon2Salt),
+          _argon2OpLimit(argon2OpLimit), _argon2MemLimit(argon2MemLimit) {}
     // Getters
     Bytes magicBytes() const { return _magicBytes; }
     uint32_t formatVersion() const { return _formatVersion; }

@@ -31,6 +31,21 @@ class VaultRepository {
      */
     virtual std::unique_ptr<VaultSession> unlockVault(const std::string& masterpass,
                                                       const std::string& filename) const;
+
+    /*
+     * @brief Creates a new vault file with the provided master password and vault name, and returns
+     * a VaultSession.
+     *
+     * @param masterpass The master password to secure the new vault.
+     * @param vaultName The name of the new vault file to create.
+     *
+     * @return A unique pointer to a VaultSession object representing the newly created vault.
+     *
+     * @throws CreateVaultError If the vault cannot be created due to an existing vault with the
+     * same name, insufficient permissions, or any other error during the creation process.
+     */
+    virtual std::unique_ptr<VaultSession> createVault(const std::string& masterpass,
+                                                      const std::string& vaultName) const;
 };
 
 // ----------  Vault repository exceptions ---------------
@@ -41,6 +56,11 @@ class VaultRepositoryError : public std::runtime_error {
 };
 
 class UnlockVaultError : public VaultRepositoryError {
+  public:
+    using VaultRepositoryError::VaultRepositoryError;
+};
+
+class CreateVaultError : public VaultRepositoryError {
   public:
     using VaultRepositoryError::VaultRepositoryError;
 };
