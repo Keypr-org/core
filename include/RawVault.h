@@ -44,13 +44,34 @@ class RawVault {
 
   public:
     // Getters
-    VaultHeader header() const { return _header; }
+    const VaultHeader& header() const { return _header; }
     const AuthMAC& headerMAC() const { return _headerMAC; }
     const EncNonce& xSalsa20Nonce() const { return _xSalsa20Nonce; }
     const EncMAC& ciphertextMAC() const { return _ciphertextMAC; }
     Bytes ciphertext() const { return _ciphertext; }
 
+    /*
+     * @brief Parses a RawVault from a byte array.
+     *
+     * @param data The byte array to parse.
+     *
+     * @return A RawVault object.
+     *
+     * @throws RawVaultParsingError If the data is too small to be a valid vault file or if the
+     * header cannot be parsed.
+     */
     static RawVault parse(Bytes data);
+
+    /*
+     * @brief Serializes a RawVault into a byte array.
+     *
+     * @param vault The RawVault object to serialize.
+     *
+     * @return A byte array representing the serialized RawVault.
+     *
+     * @throws RawVaultSerializeError If serialization goes wrong
+     */
+    static std::vector<uint8_t> serialize(const RawVault& vault);
 };
 
 // Custom exceptions for the RawVault class
@@ -61,6 +82,11 @@ class RawVaultError : public std::runtime_error {
 };
 
 class RawVaultParsingError : public RawVaultError {
+  public:
+    using RawVaultError::RawVaultError;
+};
+
+class RawVaultSerializeError : public RawVaultError {
   public:
     using RawVaultError::RawVaultError;
 };

@@ -93,3 +93,14 @@ TEST_F(RawVaultTest, ParseThrowsOnSmallData) {
     std::vector<uint8_t> smallData(VAULT_FILE_MIN_SIZE - 1, 0);
     EXPECT_THROW(RawVault::parse(smallData), RawVaultParsingError);
 }
+
+/*
+ * Valid RawVault can be serialized and the serialized data corresponds to the original data
+ */
+TEST_F(RawVaultTest, SerializeReturnsOriginalData) {
+    EXPECT_NO_THROW({
+        RawVault vault = RawVault::parse(testData);
+        std::vector<uint8_t> serializedData = RawVault::serialize(vault);
+        EXPECT_THAT(serializedData, ::testing::ElementsAreArray(testData));
+    });
+}
