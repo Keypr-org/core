@@ -42,7 +42,7 @@ std::vector<uint8_t> RawVault::serialize(const RawVault& vault) {
     std::vector<uint8_t> serializedData(RAW_VAULT_BYTES + vault.ciphertext().size());
 
     // Serialize header
-    std::vector<uint8_t> headerData = [vault]() {
+    std::array<uint8_t, VAULT_HEADER_BYTES> headerData = [vault]() {
         try {
             return VaultHeader::serialize(vault.header());
         } catch (const VaultHeaderSerializeError& e) {

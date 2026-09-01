@@ -46,6 +46,18 @@ class VaultRepository {
      */
     virtual std::unique_ptr<VaultSession> createVault(const std::string& masterpass,
                                                       const std::string& vaultName) const;
+
+    /*
+     * @brief Writes the current state of the vault session to disk as encrypted data. If a filename
+     * is provided, it will be used; otherwise, the vault name will be used to derive a filename.
+     *
+     * @param session The VaultSession object representing the vault to lock.
+     * @param filename Optional. The name of the file to write the locked vault to. If not provided,
+     * a filename will be derived from the vault name.
+     *
+     * @return true if the vault was successfully locked and written to disk, false otherwise.
+     */
+    virtual bool lockVault(const VaultSession& session, std::string filename);
 };
 
 // ----------  Vault repository exceptions ---------------
@@ -61,6 +73,11 @@ class UnlockVaultError : public VaultRepositoryError {
 };
 
 class CreateVaultError : public VaultRepositoryError {
+  public:
+    using VaultRepositoryError::VaultRepositoryError;
+};
+
+class LockVaultError : public VaultRepositoryError {
   public:
     using VaultRepositoryError::VaultRepositoryError;
 };

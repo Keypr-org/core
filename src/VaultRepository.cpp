@@ -109,3 +109,35 @@ std::unique_ptr<VaultSession> VaultRepository::createVault(const std::string& ma
         throw CreateVaultError("Failed to derive keys: " + std::string(e.what()));
     }
 }
+
+bool VaultRepository::lockVault(const VaultSession& session, std::string filename) {
+    try { // Serialize session to JSON
+        std::vector<uint8_t> vaultBodyPlaintext = VaultSession::serialize(session);
+
+        // Authenticate header
+        std::array<uint8_t, VAULT_HEADER_BYTES> headerBytes =
+            VaultHeader::serialize(*session.header);
+        AuthMAC headerMAC = CryptoService::authenticate(session.authKey, headerBytes);
+
+        // Generate random Nonce
+        std::array<uint8_t, XSALSA20_NONCE_BYTES> xSalsa20Nonce;
+        randombytes_buf(xSalsa20Nonce.data(), xSalsa20Nonce.size());
+
+        // Encrypt vault body
+        auto [ciphertextMAC, ciphertext] =
+            CryptoService::encrypt(session.encKey, xSalsa20Nonce, vaultBodyPlaintext);
+
+        // Create RawVault
+        RawVault rawVault(*session.header, headerMAC, xSalsa20Nonce, ciphertextMAC, ciphertext);
+
+        // Serialize RawVault to bytes
+        std::vector<uint8_t> rawVaultBytes = RawVault::serialize(rawVault);
+
+        FileHandler::saveFileAtomically(filename, rawVaultBytes);
+
+        return true;
+
+    } catch (std::runtime_error& e) {
+        return false;
+    }
+}

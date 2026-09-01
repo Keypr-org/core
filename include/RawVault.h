@@ -20,7 +20,7 @@
 
 // Defines the minimum size of a vault body in bytes. This was determined by measuring the size of a
 // minimal vault body
-#define VAULT_BODY_MIN_SIZE 142
+#define VAULT_BODY_MIN_SIZE 119
 // Defines the size of a raw vault in bytes.
 #define RAW_VAULT_BYTES (CIPHERTEXT_OFFSET)
 // Defines the minimum size of a vault file in bytes.
@@ -34,17 +34,18 @@ class RawVault {
     const std::array<uint8_t, CIPHERTEXT_MAC_BYTES> _ciphertextMAC;
     const std::vector<uint8_t> _ciphertext;
 
-    // Constructor is private as a RawVault should only be instanciated using its parse() method
+  public:
     RawVault(VaultHeader header, AuthMAC headerMAC,
              std::array<uint8_t, XSALSA20_NONCE_BYTES> xSalsa20Nonce,
              std::array<uint8_t, CIPHERTEXT_MAC_BYTES> ciphertextMAC,
              std::vector<uint8_t> ciphertext)
         : _header(header), _headerMAC(headerMAC), _xSalsa20Nonce(xSalsa20Nonce),
           _ciphertextMAC(ciphertextMAC), _ciphertext(ciphertext) {}
-
-  public:
     // Getters
     const VaultHeader& header() const { return _header; }
+    std::array<uint8_t, VAULT_HEADER_BYTES> rawHeader() const {
+        return VaultHeader::serialize(_header);
+    }
     const AuthMAC& headerMAC() const { return _headerMAC; }
     const EncNonce& xSalsa20Nonce() const { return _xSalsa20Nonce; }
     const EncMAC& ciphertextMAC() const { return _ciphertextMAC; }

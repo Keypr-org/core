@@ -76,8 +76,8 @@ void VaultHeader::write_u64_le(uint64_t value, MutableBytes data) {
     }
 }
 
-std::vector<uint8_t> VaultHeader::serialize(const VaultHeader& header) {
-    std::vector<uint8_t> out(VAULT_HEADER_BYTES);
+std::array<uint8_t, VAULT_HEADER_BYTES> VaultHeader::serialize(const VaultHeader& header) {
+    std::array<uint8_t, VAULT_HEADER_BYTES> out;
 
     std::copy(header.magicBytes().begin(), header.magicBytes().end(),
               out.begin() + MAGIC_BYTES_OFFSET);

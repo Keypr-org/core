@@ -90,7 +90,7 @@ class VaultHeader {
      *
      * @throws VaultHeaderSerializeError if serialization fails for any reason.
      */
-    static std::vector<uint8_t> serialize(const VaultHeader& header);
+    static std::array<uint8_t, VAULT_HEADER_BYTES> serialize(const VaultHeader& header);
 };
 
 // Custom exceptions
