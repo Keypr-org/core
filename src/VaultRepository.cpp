@@ -78,8 +78,8 @@ std::unique_ptr<VaultSession> VaultRepository::unlockVault(const std::string& ma
     }
 }
 
-std::unique_ptr<VaultSession> VaultRepository::createVault(const std::string& vaultName,
-                                                           const std::string& masterpass) const {
+std::unique_ptr<VaultSession> VaultRepository::createVault(const std::string& masterpass,
+                                                           const std::string& vaultName) const {
     try {
         // Generate salt
         std::array<uint8_t, crypto_pwhash_SALTBYTES> argon2Salt;

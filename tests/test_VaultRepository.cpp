@@ -229,7 +229,7 @@ TEST_F(VaultRepositoryTest, unlockVaultThrowsUnlockVaultErrorForCorruptedVaultFi
 TEST_F(VaultRepositoryTest, createVaultCreatesNewVaultAndReturnsVaultSession) {
     VaultRepository repo;
     EXPECT_NO_THROW({
-        auto session = repo.createVault("New Vault", masterpass);
+        auto session = repo.createVault(masterpass, "New Vault");
         EXPECT_NE(session, nullptr);
         EXPECT_EQ(session->getName(), "New Vault");
     });
