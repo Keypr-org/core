@@ -282,3 +282,33 @@ TEST_F(CryptoServiceTest, VerifyReturnsFalseForDifferentKey) {
 
     EXPECT_FALSE(result);
 }
+
+/*
+ * Verifies that encryption and decryption are consistent, i.e., decrypting the ciphertext produced
+ * by encrypt returns the original plaintext.
+ */
+TEST_F(CryptoServiceTest, EncryptAndDecryptAreConsistent) {
+    EncKey key{};
+    EncNonce nonce{};
+
+    // Generate a key and nonce with known values for testing
+    for (std::size_t i = 0; i < key.size(); ++i) {
+        key[i] = static_cast<uint8_t>(i);
+    }
+
+    for (std::size_t i = 0; i < nonce.size(); ++i) {
+        nonce[i] = static_cast<uint8_t>(i + 1);
+    }
+
+    const std::string plaintext = "secret message";
+
+    const auto [mac, ciphertext] = CryptoService::encrypt(
+        key, nonce,
+        Bytes{reinterpret_cast<const unsigned char*>(plaintext.data()), plaintext.size()});
+
+    const auto decrypted = CryptoService::decrypt(
+        key, nonce, mac,
+        Bytes{reinterpret_cast<const unsigned char*>(ciphertext.data()), ciphertext.size()});
+
+    EXPECT_EQ(decrypted, std::vector<uint8_t>(plaintext.begin(), plaintext.end()));
+}
