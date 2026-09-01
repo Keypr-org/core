@@ -10,7 +10,7 @@ class Website : public Entry {
   public:
     explicit Website(std::string notes, std::string title, std::string username,
                      std::string password, std::string url, std::string comments = "",
-                     int64_t personaId = -1, std::string alias = "");
+                     int64_t personaId = -1, std::string aliasId = "", std::string alias = "");
 
     const std::string& getTitle() const noexcept;
     void setTitle(std::string title);
@@ -30,6 +30,9 @@ class Website : public Entry {
     int64_t getPersonaId() const noexcept;
     void setPersona(int64_t personaId);
 
+    const std::string& getAliasId() const noexcept;
+    void setAliasId(std::string aliasId);
+
     const std::string& getAlias() const noexcept;
     void setAlias(std::string alias);
 
@@ -46,5 +49,6 @@ class Website : public Entry {
     std::string password;
     std::string url;
     int64_t personaId;
+    std::string aliasId;
     std::string alias;
 };

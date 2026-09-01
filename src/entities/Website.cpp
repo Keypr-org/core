@@ -1,10 +1,11 @@
 #include "entities/Website.h"
 
 Website::Website(std::string notes, std::string title, std::string username, std::string password,
-                 std::string url, std::string comments, int64_t personaId, std::string alias)
+                 std::string url, std::string comments, int64_t personaId, std::string aliasId,
+                 std::string alias)
     : Entry(std::move(notes)), title(std::move(title)), comments(std::move(comments)),
       username(std::move(username)), password(std::move(password)), url(std::move(url)),
-      personaId(personaId), alias(std::move(alias)) {}
+      personaId(personaId), aliasId(std::move(aliasId)), alias(std::move(alias)) {}
 
 const std::string& Website::getTitle() const noexcept {
     return title;
@@ -57,6 +58,15 @@ int64_t Website::getPersonaId() const noexcept {
 
 void Website::setPersona(int64_t personaId) {
     this->personaId = personaId;
+    setLastModifiedDate(std::chrono::system_clock::now());
+}
+
+const std::string& Website::getAliasId() const noexcept {
+    return aliasId;
+}
+
+void Website::setAliasId(std::string aliasId) {
+    this->aliasId = std::move(aliasId);
     setLastModifiedDate(std::chrono::system_clock::now());
 }
 
