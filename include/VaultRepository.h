@@ -46,6 +46,8 @@ class VaultRepository {
      */
     virtual std::unique_ptr<VaultSession> createVault(const std::string& masterpass,
                                                       const std::string& vaultName) const;
+
+    virtual bool lockVault(const VaultSession& session, std::string filename = "");
 };
 
 // ----------  Vault repository exceptions ---------------

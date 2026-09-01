@@ -235,3 +235,48 @@ TEST_F(VaultRepositoryTest, createVaultCreatesNewVaultAndReturnsVaultSession) {
         EXPECT_EQ(session->getName(), "New Vault");
     });
 }
+
+/*
+ * lockVault saves the vault session to the given filename and returns true
+ */
+TEST_F(VaultRepositoryTest, lockVaultSavesVaultSessionToGivenFilenameAndReturnsTrue) {
+    VaultRepository repo;
+    auto session = repo.createVault(masterpass, "New Vault");
+    const auto filename = path("locked_vaultfile.kvdb").string();
+
+    EXPECT_TRUE(repo.lockVault(*session, filename));
+    EXPECT_TRUE(repo.vaultExists(filename));
+}
+
+/*
+ * lockVault saves the vault session to a filename derived from the vault name if no filename is
+ * provided and returns true
+ */
+TEST_F(VaultRepositoryTest, lockVaultSavesVaultSessionToDerivedFilenameAndReturnsTrue) {
+    VaultRepository repo;
+    auto session = repo.createVault(masterpass, "New Vault");
+    const auto expectedFilename = path("new_vault.kvdb").string();
+
+    EXPECT_TRUE(repo.lockVault(*session));
+    EXPECT_TRUE(repo.vaultExists(expectedFilename));
+}
+
+/*
+ * lockVault returns false if saving the vault session fails (e.g., due to insufficient
+ * permissions)
+ */
+TEST_F(VaultRepositoryTest, lockVaultReturnsFalseIfSavingVaultSessionFails) {
+    VaultRepository repo;
+    auto session = repo.createVault(masterpass, "New Vault");
+    const auto filename = path("locked_vaultfile.kvdb").string();
+
+    // Make the directory read-only to simulate insufficient permissions
+    fs::permissions(testDirectory,
+                    fs::perms::owner_read | fs::perms::group_read | fs::perms::others_read);
+
+    EXPECT_FALSE(repo.lockVault(*session, filename));
+
+    // Restore permissions for cleanup
+    fs::permissions(testDirectory,
+                    fs::perms::owner_all | fs::perms::group_all | fs::perms::others_all);
+}

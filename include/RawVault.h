@@ -45,6 +45,9 @@ class RawVault {
   public:
     // Getters
     const VaultHeader& header() const { return _header; }
+    std::array<uint8_t, VAULT_HEADER_BYTES> rawHeader() const {
+        return VaultHeader::serialize(_header);
+    }
     const AuthMAC& headerMAC() const { return _headerMAC; }
     const EncNonce& xSalsa20Nonce() const { return _xSalsa20Nonce; }
     const EncMAC& ciphertextMAC() const { return _ciphertextMAC; }
