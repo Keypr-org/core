@@ -44,12 +44,23 @@ void VaultSession::addPersona(std::unique_ptr<Persona> persona) {
 }
 
 void VaultSession::removePersona(int64_t personaId) {
+    getPersonaById(personaId); // Check if persona exists, throws PersonaNotFoundError if not
     personas.erase(std::remove_if(personas.begin(), personas.end(),
                                   [personaId](const std::unique_ptr<Persona>& persona) {
                                       return persona->getId() == personaId;
                                   }),
                    personas.end());
     setLastModifiedDate(std::chrono::system_clock::now());
+
+    for (const auto& category : categories) {
+        for (const auto& entry : category->getEntries()) {
+            if (auto websiteEntry = dynamic_cast<Website*>(entry.get())) {
+                if (websiteEntry->getPersonaId() == personaId) {
+                    websiteEntry->setPersona(-1); // Unlink the persona from the entry
+                }
+            }
+        }
+    }
 }
 
 void VaultSession::linkPersonaToEntry(int64_t personaId, int64_t categoryId, int64_t entryId) {

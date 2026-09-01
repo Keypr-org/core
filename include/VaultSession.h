@@ -68,6 +68,7 @@ class VaultSession : public DatedItem {
     /**
      * Removes a persona from the VaultSession.
      * @param personaId The ID of the persona to remove.
+     * @throws PersonaNotFoundError if the persona with the specified ID does not exist.
      */
     void removePersona(int64_t personaId);
 

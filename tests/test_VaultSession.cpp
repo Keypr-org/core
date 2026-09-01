@@ -631,35 +631,109 @@ TEST_F(VaultSessionTest, RemoveEntryFromMissingCategoryThrowsAndLeavesStateUncha
 }
 
 /**
- * Test that removing a persona from a VaultSession removes only the matching persona and
- * updates the last modified date.
+ * Test that removing a persona removes it, unlinks every website that referenced it, and updates
+ * the last modified date.
  */
-TEST_F(VaultSessionTest, RemovePersonaRemovesOnlyMatchingPersona) {
+TEST_F(VaultSessionTest, RemovePersonaRemovesAndUnlinksAssociatedWebsites) {
     VaultSession session("My Vault", makeEncKey(), makeAuthKey(), nullptr);
 
     session.addPersona(makePersona("Ada", "Lovelace"));
     session.addPersona(makePersona("Grace", "Hopper"));
 
-    session.removePersona(session.getPersonas().front()->getId());
+    const auto adaId = session.getPersonas()[0]->getId();
+    const auto graceId = session.getPersonas()[1]->getId();
+
+    session.addCategory(makeCategory("Passwords"));
+    session.addCategory(makeCategory("Work"));
+    session.addCategory(makeCategory("Misc"));
+
+    const auto passwordsCategoryId = session.getCategories()[0]->getId();
+    const auto workCategoryId = session.getCategories()[1]->getId();
+    const auto miscCategoryId = session.getCategories()[2]->getId();
+
+    auto adaPassword =
+        makeWebsite("Ada password", "Ada Password", "ada", "secret", "https://ada.example.com");
+    auto adaWork =
+        makeWebsite("Ada work", "Ada Work", "ada.work", "secret", "https://work.example.com/ada");
+    auto gracePassword = makeWebsite("Grace password", "Grace Password", "grace", "secret",
+                                     "https://grace.example.com");
+    auto wifi = std::make_unique<Wifi>("wifi notes", "Home Wi-Fi", "wifi-password");
+    auto creditCard = std::make_unique<CreditCard>("Alice Example", "4111111111111111", "12/30",
+                                                   "123", "card notes");
+
+    const auto adaPasswordId = adaPassword->getId();
+    const auto adaWorkId = adaWork->getId();
+    const auto gracePasswordId = gracePassword->getId();
+    const auto wifiId = wifi->getId();
+    const auto creditCardId = creditCard->getId();
+
+    session.addEntryToCategory(passwordsCategoryId, std::move(adaPassword));
+    session.addEntryToCategory(passwordsCategoryId, std::move(gracePassword));
+    session.addEntryToCategory(workCategoryId, std::move(adaWork));
+    session.addEntryToCategory(miscCategoryId, std::move(wifi));
+    session.addEntryToCategory(miscCategoryId, std::move(creditCard));
+
+    session.linkPersonaToEntry(adaId, passwordsCategoryId, adaPasswordId);
+    session.linkPersonaToEntry(graceId, passwordsCategoryId, gracePasswordId);
+    session.linkPersonaToEntry(adaId, workCategoryId, adaWorkId);
+
+    const auto previousLastModified = session.getLastModifiedDate();
+    const auto adaPasswordLastModifiedBefore =
+        session.getWebsiteById(adaPasswordId)->getLastModifiedDate();
+    const auto adaWorkLastModifiedBefore = session.getWebsiteById(adaWorkId)->getLastModifiedDate();
+    const auto gracePasswordLastModifiedBefore =
+        session.getWebsiteById(gracePasswordId)->getLastModifiedDate();
+    const auto wifiLastModifiedBefore =
+        dynamic_cast<const Wifi*>(session.getCategories()[2]->getEntries()[0].get())
+            ->getLastModifiedDate();
+    const auto creditCardLastModifiedBefore =
+        dynamic_cast<const CreditCard*>(session.getCategories()[2]->getEntries()[1].get())
+            ->getLastModifiedDate();
+
+    session.removePersona(adaId);
 
     ASSERT_EQ(session.getPersonas().size(), 1U);
+    EXPECT_EQ(session.getPersonas().front()->getId(), graceId);
     EXPECT_EQ(session.getPersonas().front()->getFirstName(), "Grace");
     EXPECT_EQ(session.getPersonas().front()->getLastName(), "Hopper");
+
+    const auto* unlinkedAdaPassword = session.getWebsiteById(adaPasswordId);
+    const auto* unlinkedAdaWork = session.getWebsiteById(adaWorkId);
+    const auto* stillLinkedGracePassword = session.getWebsiteById(gracePasswordId);
+
+    ASSERT_NE(unlinkedAdaPassword, nullptr);
+    ASSERT_NE(unlinkedAdaWork, nullptr);
+    ASSERT_NE(stillLinkedGracePassword, nullptr);
+
+    EXPECT_EQ(unlinkedAdaPassword->getPersonaId(), -1);
+    EXPECT_EQ(unlinkedAdaWork->getPersonaId(), -1);
+    EXPECT_EQ(stillLinkedGracePassword->getPersonaId(), graceId);
+    EXPECT_NE(unlinkedAdaPassword->getLastModifiedDate(), adaPasswordLastModifiedBefore);
+    EXPECT_NE(unlinkedAdaWork->getLastModifiedDate(), adaWorkLastModifiedBefore);
+    EXPECT_EQ(stillLinkedGracePassword->getLastModifiedDate(), gracePasswordLastModifiedBefore);
+    EXPECT_EQ(dynamic_cast<const Wifi*>(session.getCategories()[2]->getEntries()[0].get())
+                  ->getLastModifiedDate(),
+              wifiLastModifiedBefore);
+    EXPECT_EQ(dynamic_cast<const CreditCard*>(session.getCategories()[2]->getEntries()[1].get())
+                  ->getLastModifiedDate(),
+              creditCardLastModifiedBefore);
+    EXPECT_GE(session.getLastModifiedDate(), previousLastModified);
 }
 
 /*
- * Tests that removing a persona that does not exist leaves the collection unchanged.
+ * Tests that removing a persona that does not exist throws and leaves the collection unchanged.
  */
-TEST_F(VaultSessionTest, RemoveMissingPersonaLeavesCollectionUnchanged) {
+TEST_F(VaultSessionTest, RemoveMissingPersonaThrowsAndLeavesCollectionUnchanged) {
     VaultSession session("My Vault", makeEncKey(), makeAuthKey(), nullptr);
 
     session.addPersona(makePersona("Ada", "Lovelace"));
-
+    const auto personaId = session.getPersonas().front()->getId();
     const auto previousLastModified = session.getLastModifiedDate();
 
-    session.removePersona(session.getPersonas().front()->getId() + 1);
+    EXPECT_THROW(session.removePersona(personaId + 1), PersonaNotFoundError);
 
     ASSERT_EQ(session.getPersonas().size(), 1U);
+    EXPECT_EQ(session.getPersonas().front()->getId(), personaId);
     EXPECT_GE(session.getLastModifiedDate(), previousLastModified);
 }
 
