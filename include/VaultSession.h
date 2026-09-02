@@ -116,14 +116,14 @@ class VaultSession : public DatedItem {
      * @param url The URL to search for.
      * @return A vector of pointers to the matching websites.
      */
-    std::vector<const Website*> getWebsiteByUrl(const std::string& url) const;
+    std::vector<Website*> getWebsiteByUrl(const std::string& url) const;
 
     /**
      * Returns a website by its ID.
      * @param entryId The ID of the website to find.
      * @return A pointer to the website, or nullptr if not found.
      */
-    const Website* getWebsiteById(int64_t entryId) const;
+    Website* getWebsiteById(int64_t entryId) const;
 
     /**
      * Sets the alias for a website entry in the VaultSession.
@@ -155,7 +155,7 @@ class VaultSession : public DatedItem {
      * @return A vector of pointers to the matching entries.
      * @throws CategoryNotFoundError if the category with the specified ID does not exist.
      */
-    std::vector<const Entry*> searchEntriesInCategory(int64_t categoryId,
+    std::vector<Entry*> searchEntriesInCategory(int64_t categoryId,
                                                       const std::string& searchTerm) const;
 
     /*

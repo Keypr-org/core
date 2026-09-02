@@ -174,10 +174,10 @@ VaultSession VaultSession::parse(Bytes vaultBody) {
     return result;
 }
 
-const Website* VaultSession::getWebsiteById(int64_t entryId) const {
+Website* VaultSession::getWebsiteById(int64_t entryId) const {
     for (const auto& category : categories) {
         for (const auto& entry : category->getEntries()) {
-            const auto* website = dynamic_cast<const Website*>(entry.get());
+            auto* website = dynamic_cast<Website*>(entry.get());
             if (website && website->getId() == entryId) {
                 return website;
             }
@@ -218,15 +218,15 @@ const std::unique_ptr<Category>& VaultSession::findCategoryById(int64_t category
     }
 }
 
-std::vector<const Entry*>
-VaultSession::searchEntriesInCategory(int64_t categoryId, const std::string& searchTerm) const {
+std::vector<Entry*> VaultSession::searchEntriesInCategory(int64_t categoryId,
+                                                          const std::string& searchTerm) const {
     const std::unique_ptr<Category>& category = findCategoryById(categoryId);
 
-    std::vector<const Entry*> matchingEntries;
-    for (const auto& entry : category->getEntries()) {
+    std::vector<Entry*> matchingEntries;
+    for (auto& entry : category->getEntries()) {
         if (entry->getNotes().find(searchTerm) != std::string::npos) {
             matchingEntries.push_back(entry.get());
-        } else if (const auto websiteEntry = dynamic_cast<const Website*>(entry.get())) {
+        } else if (auto websiteEntry = dynamic_cast<Website*>(entry.get())) {
             if (websiteEntry->getTitle().find(searchTerm) != std::string::npos ||
                 websiteEntry->getUsername().find(searchTerm) != std::string::npos ||
                 websiteEntry->getUrl().find(searchTerm) != std::string::npos ||
@@ -234,11 +234,11 @@ VaultSession::searchEntriesInCategory(int64_t categoryId, const std::string& sea
                 websiteEntry->getAlias().find(searchTerm) != std::string::npos) {
                 matchingEntries.push_back(entry.get());
             }
-        } else if (const auto wifiEntry = dynamic_cast<const Wifi*>(entry.get())) {
+        } else if (auto wifiEntry = dynamic_cast<Wifi*>(entry.get())) {
             if (wifiEntry->getNetworkName().find(searchTerm) != std::string::npos) {
                 matchingEntries.push_back(entry.get());
             }
-        } else if (const auto cardEntry = dynamic_cast<const CreditCard*>(entry.get())) {
+        } else if (auto cardEntry = dynamic_cast<CreditCard*>(entry.get())) {
             if (cardEntry->getCardHolderName().find(searchTerm) != std::string::npos) {
                 matchingEntries.push_back(entry.get());
             }
@@ -248,12 +248,12 @@ VaultSession::searchEntriesInCategory(int64_t categoryId, const std::string& sea
     return matchingEntries;
 }
 
-std::vector<const Website*> VaultSession::getWebsiteByUrl(const std::string& url) const {
-    std::vector<const Website*> matchingWebsites;
+std::vector<Website*> VaultSession::getWebsiteByUrl(const std::string& url) const {
+    std::vector<Website*> matchingWebsites;
 
     for (const auto& category : categories) {
         for (const auto& entry : category->getEntries()) {
-            const Website* website = dynamic_cast<const Website*>(entry.get());
+            Website* website = dynamic_cast<Website*>(entry.get());
             if (website && (url.find(website->getUrl()) != std::string::npos) ||
                 (website->getUrl().find(url) != std::string::npos)) {
                 matchingWebsites.push_back(website);
