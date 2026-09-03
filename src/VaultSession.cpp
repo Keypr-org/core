@@ -248,7 +248,7 @@ std::vector<Entry*> VaultSession::searchEntriesInCategory(int64_t categoryId,
     return matchingEntries;
 }
 
-std::vector<Website*> VaultSession::getWebsiteByUrl(const std::string& url) const {
+std::vector<Website*> VaultSession::getWebsitesByUrl(const std::string& url) const {
     std::vector<Website*> matchingWebsites;
 
     for (const auto& category : categories) {
