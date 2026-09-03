@@ -701,9 +701,9 @@ TEST_F(VaultSessionTest, GetWebsiteByIdReturnsNullptrWhenWebsiteDoesNotExist) {
 }
 
 /**
- * Test that getWebsiteByUrl returns all websites matching the given URL.
+ * Test that getWebsitesByUrl returns all websites matching the given URL.
  */
-TEST_F(VaultSessionTest, GetWebsiteByUrlReturnsAllMatchingWebsites) {
+TEST_F(VaultSessionTest, getWebsitesByUrlReturnsAllMatchingWebsites) {
     VaultSession session("My Vault", makeEncKey(), makeAuthKey(), nullptr);
     session.addCategory(std::move(makeCategory("Passwords")));
     const auto categoryId = session.getCategories().front()->getId();
@@ -713,7 +713,7 @@ TEST_F(VaultSessionTest, GetWebsiteByUrlReturnsAllMatchingWebsites) {
     session.addEntryToCategory(categoryId,
                                std::move(makeWebsite("https://example.com", "second", "Second")));
 
-    const auto websites = session.getWebsiteByUrl("https://example.com");
+    const auto websites = session.getWebsitesByUrl("https://example.com");
 
     ASSERT_EQ(websites.size(), 2U);
     ASSERT_NE(websites[0], nullptr);
@@ -725,30 +725,30 @@ TEST_F(VaultSessionTest, GetWebsiteByUrlReturnsAllMatchingWebsites) {
 }
 
 /**
- * Test that getWebsiteByUrl returns an empty vector when no website matches the requested URL.
+ * Test that getWebsitesByUrl returns an empty vector when no website matches the requested URL.
  */
-TEST_F(VaultSessionTest, GetWebsiteByUrlReturnsEmptyVectorWhenNoWebsiteMatches) {
+TEST_F(VaultSessionTest, getWebsitesByUrlReturnsEmptyVectorWhenNoWebsiteMatches) {
     VaultSession session("My Vault", makeEncKey(), makeAuthKey(), nullptr);
     session.addCategory(std::move(makeCategory("Passwords")));
     session.addEntryToCategory(session.getCategories().front()->getId(),
                                std::move(makeWebsite("https://example.com")));
 
-    const auto websites = session.getWebsiteByUrl("https://missing.example.com");
+    const auto websites = session.getWebsitesByUrl("https://missing.example.com");
 
     EXPECT_TRUE(websites.empty());
 }
 
 /**
- * Test that getWebsiteByUrl matches when the requested URL contains the website URL.
+ * Test that getWebsitesByUrl matches when the requested URL contains the website URL.
  */
-TEST_F(VaultSessionTest, GetWebsiteByUrlMatchesWhenRequestedUrlContainsWebsiteUrl) {
+TEST_F(VaultSessionTest, getWebsitesByUrlMatchesWhenRequestedUrlContainsWebsiteUrl) {
     VaultSession session("My Vault", makeEncKey(), makeAuthKey(), nullptr);
     session.addCategory(std::move(makeCategory("Passwords")));
     const auto categoryId = session.getCategories().front()->getId();
 
     session.addEntryToCategory(categoryId, std::move(makeWebsite("example.com", "notes")));
 
-    const auto websites = session.getWebsiteByUrl("https://example.com/login");
+    const auto websites = session.getWebsitesByUrl("https://example.com/login");
 
     ASSERT_EQ(websites.size(), 1U);
     ASSERT_NE(websites[0], nullptr);
@@ -757,9 +757,9 @@ TEST_F(VaultSessionTest, GetWebsiteByUrlMatchesWhenRequestedUrlContainsWebsiteUr
 }
 
 /**
- * Test that getWebsiteByUrl matches when the website URL contains the requested URL.
+ * Test that getWebsitesByUrl matches when the website URL contains the requested URL.
  */
-TEST_F(VaultSessionTest, GetWebsiteByUrlMatchesWhenWebsiteUrlContainsRequestedUrl) {
+TEST_F(VaultSessionTest, getWebsitesByUrlMatchesWhenWebsiteUrlContainsRequestedUrl) {
     VaultSession session("My Vault", makeEncKey(), makeAuthKey(), nullptr);
     session.addCategory(std::move(makeCategory("Passwords")));
     const auto categoryId = session.getCategories().front()->getId();
@@ -767,7 +767,7 @@ TEST_F(VaultSessionTest, GetWebsiteByUrlMatchesWhenWebsiteUrlContainsRequestedUr
     session.addEntryToCategory(categoryId,
                                std::move(makeWebsite("https://example.com/login", "notes")));
 
-    const auto websites = session.getWebsiteByUrl("example.com");
+    const auto websites = session.getWebsitesByUrl("example.com");
 
     ASSERT_EQ(websites.size(), 1U);
     ASSERT_NE(websites[0], nullptr);
