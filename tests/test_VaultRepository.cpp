@@ -249,21 +249,13 @@ TEST_F(VaultRepositoryTest, lockVaultSavesVaultSessionToGivenFilenameAndReturnsT
 }
 
 /*
- * lockVault returns false if saving the vault session fails (e.g., due to insufficient
- * permissions)
+ * lockVault returns false if saving the vault session fails because its parent directory does not
+ * exist.
  */
 TEST_F(VaultRepositoryTest, lockVaultReturnsFalseIfSavingVaultSessionFails) {
     VaultRepository repo;
     auto session = repo.createVault(masterpass, "New Vault");
-    const auto filename = path("locked_vaultfile.kvdb").string();
-
-    // Make the directory read-only to simulate insufficient permissions
-    fs::permissions(testDirectory,
-                    fs::perms::owner_read | fs::perms::group_read | fs::perms::others_read);
+    const auto filename = path("missing_directory/locked_vaultfile.kvdb").string();
 
     EXPECT_FALSE(repo.lockVault(*session, filename));
-
-    // Restore permissions for cleanup
-    fs::permissions(testDirectory,
-                    fs::perms::owner_all | fs::perms::group_all | fs::perms::others_all);
 }
