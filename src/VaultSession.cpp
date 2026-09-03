@@ -254,8 +254,8 @@ std::vector<Website*> VaultSession::getWebsiteByUrl(const std::string& url) cons
     for (const auto& category : categories) {
         for (const auto& entry : category->getEntries()) {
             Website* website = dynamic_cast<Website*>(entry.get());
-            if (website && (url.find(website->getUrl()) != std::string::npos) ||
-                (website->getUrl().find(url) != std::string::npos)) {
+            if (website && ((url.find(website->getUrl()) != std::string::npos) ||
+                            (website->getUrl().find(url) != std::string::npos))) {
                 matchingWebsites.push_back(website);
             }
         }
