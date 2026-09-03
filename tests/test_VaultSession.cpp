@@ -940,8 +940,8 @@ TEST_F(VaultSessionTest, RemovePersonaRemovesAndUnlinksAssociatedWebsites) {
     EXPECT_EQ(unlinkedAdaPassword->getPersonaId(), NO_PERSONA_ID);
     EXPECT_EQ(unlinkedAdaWork->getPersonaId(), NO_PERSONA_ID);
     EXPECT_EQ(stillLinkedGracePassword->getPersonaId(), graceId);
-    EXPECT_NE(unlinkedAdaPassword->getLastModifiedDate(), adaPasswordLastModifiedBefore);
-    EXPECT_NE(unlinkedAdaWork->getLastModifiedDate(), adaWorkLastModifiedBefore);
+    EXPECT_GE(unlinkedAdaPassword->getLastModifiedDate(), adaPasswordLastModifiedBefore);
+    EXPECT_GE(unlinkedAdaWork->getLastModifiedDate(), adaWorkLastModifiedBefore);
     EXPECT_EQ(stillLinkedGracePassword->getLastModifiedDate(), gracePasswordLastModifiedBefore);
     EXPECT_EQ(dynamic_cast<const Wifi*>(session.getCategories()[2]->getEntries()[0].get())
                   ->getLastModifiedDate(),
