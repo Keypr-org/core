@@ -116,7 +116,7 @@ class VaultSession : public DatedItem {
      * @param url The URL to search for.
      * @return A vector of pointers to the matching websites.
      */
-    std::vector<Website*> getWebsiteByUrl(const std::string& url) const;
+    std::vector<Website*> getWebsitesByUrl(const std::string& url) const;
 
     /**
      * Returns a website by its ID.
@@ -156,7 +156,7 @@ class VaultSession : public DatedItem {
      * @throws CategoryNotFoundError if the category with the specified ID does not exist.
      */
     std::vector<Entry*> searchEntriesInCategory(int64_t categoryId,
-                                                      const std::string& searchTerm) const;
+                                                const std::string& searchTerm) const;
 
     /*
      * @brief Parses a VaultSession from a JSON representation.

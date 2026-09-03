@@ -248,14 +248,14 @@ std::vector<Entry*> VaultSession::searchEntriesInCategory(int64_t categoryId,
     return matchingEntries;
 }
 
-std::vector<Website*> VaultSession::getWebsiteByUrl(const std::string& url) const {
+std::vector<Website*> VaultSession::getWebsitesByUrl(const std::string& url) const {
     std::vector<Website*> matchingWebsites;
 
     for (const auto& category : categories) {
         for (const auto& entry : category->getEntries()) {
             Website* website = dynamic_cast<Website*>(entry.get());
-            if (website && (url.find(website->getUrl()) != std::string::npos) ||
-                (website->getUrl().find(url) != std::string::npos)) {
+            if (website && ((url.find(website->getUrl()) != std::string::npos) ||
+                            (website->getUrl().find(url) != std::string::npos))) {
                 matchingWebsites.push_back(website);
             }
         }
