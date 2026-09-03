@@ -1,123 +1,113 @@
+/*
+ * @brief Implementation of the CryptoService class for cryptographic operations using libsodium.
+ *
+ * @Author Nolan Evard
+ * @date 27.08.2026
+ */
 #include "CryptoService.h"
 #include <sodium.h>
-#include <cstring>
-#include <sstream>
-#include <iomanip>
 
-// Convertir bytes en hex string
-static std::string bytesToHex(const unsigned char* bytes, size_t length) {
-    std::stringstream ss;
-    for (size_t i = 0; i < length; ++i) {
-        ss << std::hex << std::setw(2) << std::setfill('0') << (int)bytes[i];
-    }
-    return ss.str();
-}
-
-// Convertir hex string en bytes
-static std::string hexToBytes(const std::string& hex) {
-    std::string bytes;
-    for (size_t i = 0; i < hex.length(); i += 2) {
-        std::string byteString = hex.substr(i, 2);
-        char byte = (char)(int)strtol(byteString.c_str(), nullptr, 16);
-        bytes.push_back(byte);
-    }
-    return bytes;
-}
-
-CryptoService::CryptoService() {
+std::vector<uint8_t> CryptoService::deriveKey(const std::string& masterpass, uint64_t keyLen,
+                                              Bytes salt, uint64_t opLimits, uint64_t memLimit) {
+    // Initialize libsodium if it hasn't been initialized yet. It is safe to call sodium_init
+    // multiple times
     if (sodium_init() < 0) {
-        throw std::runtime_error("Failed to initialize libsodium");
+        throw KeyDerivationError("Failed to initialize libsodium");
     }
+
+    std::vector<uint8_t> out(keyLen);
+    // Check params boundaries
+    if (keyLen == 0)
+        return out;
+    else if (keyLen < crypto_pwhash_BYTES_MIN)
+        throw KeyDerivationError("Key length must be at least " +
+                                 std::to_string(crypto_pwhash_BYTES_MIN) + " bytes");
+    else if (keyLen > crypto_pwhash_BYTES_MAX)
+        throw KeyDerivationError("Key length must be at most " +
+                                 std::to_string(crypto_pwhash_BYTES_MAX) + " bytes");
+
+    if (masterpass.size() < crypto_pwhash_PASSWD_MIN) {
+        throw KeyDerivationError("Password length must be at least " +
+                                 std::to_string(crypto_pwhash_PASSWD_MIN) + " bytes");
+    } else if (masterpass.size() > crypto_pwhash_PASSWD_MAX) {
+        throw KeyDerivationError("Password length must be at most " +
+                                 std::to_string(crypto_pwhash_PASSWD_MAX) + " bytes");
+    }
+
+    if (salt.size() != crypto_pwhash_SALTBYTES) {
+        throw KeyDerivationError("Invalid salt size");
+    }
+
+    if (opLimits < crypto_pwhash_OPSLIMIT_MIN || opLimits > crypto_pwhash_OPSLIMIT_MAX) {
+        throw KeyDerivationError("Invalid ops limit");
+    }
+
+    if (memLimit < crypto_pwhash_MEMLIMIT_MIN || memLimit > crypto_pwhash_MEMLIMIT_MAX) {
+        throw KeyDerivationError("Invalid memory limit");
+    }
+
+    if (crypto_pwhash(out.data(), out.size(), masterpass.data(), masterpass.size(), salt.data(),
+                      opLimits, memLimit, KDF_ALGORITHM) < 0) {
+        throw KeyDerivationError("Key derivation failed");
+    }
+    return out;
 }
 
-std::string CryptoService::generateRandomBytes(size_t length) {
-    unsigned char* buffer = new unsigned char[length];
-    randombytes_buf(buffer, length);
-    std::string result(reinterpret_cast<char*>(buffer), length);
-    delete[] buffer;
-    return result;
+AuthMAC CryptoService::authenticate(const AuthKey& key, Bytes content) {
+    // Initialize libsodium if it hasn't been initialized yet. It is safe to call sodium_init
+    // multiple times
+    if (sodium_init() < 0) {
+        throw KeyDerivationError("Failed to initialize libsodium");
+    }
+
+    AuthMAC out{};
+    if (crypto_auth(out.data(), content.data(), content.size(), key.data()) != 0) {
+        throw AuthenticationError("Authentication failed");
+    }
+    return out;
 }
 
-std::string CryptoService::hashPassword(const std::string& password) {
-    unsigned char salt[crypto_pwhash_SALTBYTES];
-    randombytes_buf(salt, sizeof(salt));
-
-    unsigned char hash[crypto_pwhash_STRBYTES];
-
-    if (crypto_pwhash(
-            hash, sizeof(hash),
-            password.c_str(), password.length(),
-            salt,
-            crypto_pwhash_OPSLIMIT_MODERATE,
-            crypto_pwhash_MEMLIMIT_MODERATE,
-            crypto_pwhash_ALG_DEFAULT) != 0) {
-        throw std::runtime_error("Failed to hash password");
+bool CryptoService::verify(const AuthKey& key, const AuthMAC& in, Bytes content) {
+    if (crypto_auth_verify(in.data(), content.data(), content.size(), key.data()) != 0) {
+        return false;
     }
-
-    return std::string(reinterpret_cast<char*>(hash), sizeof(hash));
+    return true;
 }
 
-std::string CryptoService::encrypt(const std::string& plaintext, const std::string& key) {
-    if (key.length() != crypto_secretbox_KEYBYTES) {
-        throw std::runtime_error("Invalid key length. Expected " +
-                                 std::to_string(crypto_secretbox_KEYBYTES) + " bytes");
+std::vector<uint8_t> CryptoService::decrypt(const EncKey& key, const EncNonce& nonce,
+                                            const EncMAC& mac, Bytes ciphertext) {
+    // Initialize libsodium if it hasn't been initialized yet. It is safe to call sodium_init
+    // multiple times
+    if (sodium_init() < 0) {
+        throw KeyDerivationError("Failed to initialize libsodium");
     }
 
-    unsigned char nonce[crypto_secretbox_NONCEBYTES];
-    randombytes_buf(nonce, sizeof(nonce));
-
-    unsigned char* ciphertext = new unsigned char[plaintext.length() + crypto_secretbox_MACBYTES];
-
-    crypto_secretbox_easy(
-        ciphertext,
-        reinterpret_cast<const unsigned char*>(plaintext.c_str()),
-        plaintext.length(),
-        nonce,
-        reinterpret_cast<const unsigned char*>(key.c_str())
-        );
-
-    // Retourner : nonce + ciphertext (en hex)
-    std::string nonce_hex = bytesToHex(nonce, sizeof(nonce));
-    std::string cipher_hex = bytesToHex(ciphertext, plaintext.length() + crypto_secretbox_MACBYTES);
-
-    delete[] ciphertext;
-
-    return nonce_hex + cipher_hex;
+    std::vector<uint8_t> out(ciphertext.size());
+    if (ciphertext.size() == 0) {
+        return out;
+    }
+    if (crypto_secretbox_open_detached(out.data(), ciphertext.data(), mac.data(), ciphertext.size(),
+                                       nonce.data(), key.data()) != 0) {
+        throw DecryptionError("Decryption failed");
+    }
+    return out;
 }
 
-std::string CryptoService::decrypt(const std::string& ciphertext, const std::string& key) {
-    if (key.length() != crypto_secretbox_KEYBYTES) {
-        throw std::runtime_error("Invalid key length. Expected " +
-                                 std::to_string(crypto_secretbox_KEYBYTES) + " bytes");
+std::pair<std::array<uint8_t, crypto_secretbox_MACBYTES>, std::vector<uint8_t>>
+CryptoService::encrypt(const EncKey& key, const EncNonce& nonce, Bytes plaintext) {
+    if (sodium_init() < 0) {
+        throw EncryptionError("Failed to initialize libsodium");
     }
 
-    size_t nonce_hex_len = crypto_secretbox_NONCEBYTES * 2;
-    if (ciphertext.length() < nonce_hex_len) {
-        throw std::runtime_error("Ciphertext too short");
+    std::vector<uint8_t> ciphertext(plaintext.size());
+
+    std::array<uint8_t, crypto_secretbox_MACBYTES> mac{};
+
+    if (plaintext.size() != 0 &&
+        crypto_secretbox_detached(ciphertext.data(), mac.data(), plaintext.data(), plaintext.size(),
+                                  nonce.data(), key.data()) != 0) {
+        throw EncryptionError("Encryption failed");
     }
 
-    std::string nonce_hex = ciphertext.substr(0, nonce_hex_len);
-    std::string cipher_hex = ciphertext.substr(nonce_hex_len);
-
-    unsigned char nonce[crypto_secretbox_NONCEBYTES];
-    std::string nonce_bytes = hexToBytes(nonce_hex);
-    std::memcpy(nonce, nonce_bytes.c_str(), sizeof(nonce));
-
-    std::string cipher_bytes = hexToBytes(cipher_hex);
-    unsigned char* plaintext = new unsigned char[cipher_bytes.length() - crypto_secretbox_MACBYTES];
-
-    if (crypto_secretbox_open_easy(
-            plaintext,
-            reinterpret_cast<const unsigned char*>(cipher_bytes.c_str()),
-            cipher_bytes.length(),
-            nonce,
-            reinterpret_cast<const unsigned char*>(key.c_str())) != 0) {
-        delete[] plaintext;
-        throw std::runtime_error("Decryption failed - authentication check failed");
-    }
-
-    std::string result(reinterpret_cast<char*>(plaintext), cipher_bytes.length() - crypto_secretbox_MACBYTES);
-    delete[] plaintext;
-
-    return result;
+    return std::make_pair(mac, ciphertext);
 }
